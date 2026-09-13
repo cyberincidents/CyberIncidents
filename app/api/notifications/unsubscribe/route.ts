@@ -7,16 +7,27 @@ import {
   sendUnsubscriptionConfirmationEmail,
 } from "@/lib/notifications/email";
 
-const COOKIE_NAME =
-  "cyberincidents_notification_token";
+const COOKIE_NAME = "cyberincidents_notification_token";
+
+type UnsubscribeResult =
+  | {
+      success: true;
+      status: 200;
+      alreadyUnsubscribed: boolean;
+      email: string;
+      message: string;
+    }
+  | {
+      success: false;
+      status: 400 | 404;
+      error: string;
+    };
 
 /* =====================================================
    COOKIE CLEARING
 ===================================================== */
 
-function clearSubscriptionCookie(
-  response: NextResponse
-) {
+function clearSubscriptionCookie(response: NextResponse) {
   response.cookies.set({
     name: COOKIE_NAME,
     value: "",
@@ -32,7 +43,9 @@ function clearSubscriptionCookie(
    UNSUBSCRIBE USING TOKEN
 ===================================================== */
 
-async function unsubscribeWithToken(token: string) {
+async function unsubscribeWithToken(
+  token: string
+): Promise<UnsubscribeResult> {
   if (!token || token.length !== 64) {
     return {
       success: false,
