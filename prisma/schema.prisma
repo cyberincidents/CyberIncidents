@@ -1,0 +1,380 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// USER & AUTHENTICATION
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  passwordHash  String?
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(USER)
+
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
+  
+  accounts      Account[]
+  sessions      Session[]
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+model Account {
+  id     String @id @default(cuid())
+  userId String
+
+  type              String
+  provider          String
+  providerAccountId String
+
+  refresh_token String? @db.Text
+  access_token  String? @db.Text
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String? @db.Text
+  session_state String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// CYBERSECURITY FIELDS
+// ─────────────────────────────────────────────
+
+model Field {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String? @db.Text
+  number      String?
+
+  blogs BlogField[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+// ─────────────────────────────────────────────
+// BLOGS
+// ─────────────────────────────────────────────
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BlogAccess {
+  FREE
+  PAID
+}
+
+model Blog {
+  id String @id @default(cuid())
+
+  title String
+  slug  String @unique
+
+  excerpt String? @db.Text
+  content String  @db.Text
+
+  author String
+
+  status BlogStatus @default(DRAFT)
+  access BlogAccess @default(FREE)
+
+  publishedAt DateTime?
+
+  readTime Int?
+
+  featured Boolean @default(false)
+
+  fields      BlogField[]
+  tags        BlogTag[]
+  images      BlogImage[]
+  shareEvents ShareEvent[]
+  viewEvents  BlogViewEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([access])
+  @@index([publishedAt])
+  @@index([featured])
+  @@index([status, publishedAt])
+}
+
+// ─────────────────────────────────────────────
+// BLOG VIEW ANALYTICS
+// ─────────────────────────────────────────────
+
+model BlogViewEvent {
+  id     String @id @default(cuid())
+  blogId String
+
+  ipHash    String?
+  userAgent String? @db.Text
+  referer   String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  @@index([blogId])
+  @@index([createdAt])
+  @@index([blogId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// BLOG ↔ FIELD
+// ─────────────────────────────────────────────
+
+model BlogField {
+  blogId  String
+  fieldId String
+
+  blog  Blog  @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  field Field @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([blogId, fieldId])
+  @@index([fieldId])
+}
+
+// ─────────────────────────────────────────────
+// BLOG TAGS
+// ─────────────────────────────────────────────
+
+model Tag {
+  id String @id @default(cuid())
+
+  name String @unique
+  slug String @unique
+
+  blogs BlogTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model BlogTag {
+  blogId String
+  tagId  String
+
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([blogId, tagId])
+  @@index([tagId])
+}
+
+// ─────────────────────────────────────────────
+// BLOG IMAGES / CLOUDINARY METADATA
+// ─────────────────────────────────────────────
+
+model BlogImage {
+  id String @id @default(cuid())
+
+  blogId String
+
+  publicId String
+  url      String? @db.Text
+
+  altText String?
+  width   Int?
+  height  Int?
+
+  sortOrder Int     @default(0)
+  isPrimary Boolean @default(false)
+
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([blogId])
+  @@index([blogId, sortOrder])
+  @@index([blogId, isPrimary])
+}
+
+// ─────────────────────────────────────────────
+// SHARE ANALYTICS
+// ─────────────────────────────────────────────
+
+enum SharePlatform {
+  WHATSAPP
+  LINKEDIN
+  X
+  FACEBOOK
+  COPY_LINK
+  OTHER
+}
+
+model ShareEvent {
+  id String @id @default(cuid())
+
+  blogId   String
+  platform SharePlatform
+
+  ipHash    String?
+  userAgent String? @db.Text
+  referer   String? @db.Text
+
+  blog Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([blogId])
+  @@index([platform])
+  @@index([createdAt])
+  @@index([blogId, platform])
+}
+
+// ─────────────────────────────────────────────
+// SUBSCRIPTIONS
+// ─────────────────────────────────────────────
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+model Plan {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String  @unique
+  description String? @db.Text
+
+  price    Decimal @db.Decimal(10, 2)
+  currency String  @default("INR")
+
+  interval String?
+  provider String?
+
+  active Boolean @default(true)
+
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+}
+
+model Subscription {
+  id String @id @default(cuid())
+
+  userId String
+  planId String
+
+  status SubscriptionStatus @default(ACTIVE)
+
+  provider               String?
+  providerCustomerId     String?
+  providerSubscriptionId String?
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+
+  cancelAtPeriodEnd Boolean   @default(false)
+  canceledAt        DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([providerSubscriptionId])
+  @@index([userId, status])
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATION SUBSCRIBERS
+// ─────────────────────────────────────────────
+
+model NotificationSubscriber {
+  id String @id @default(cuid())
+
+  email    String  @unique
+  verified Boolean @default(false)
+  active   Boolean @default(true)
+
+  unsubscribeToken String? @unique
+  tokenExpiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+}
+
+// ─────────────────────────────────────────────
+// SITE SETTINGS
+// ─────────────────────────────────────────────
+
+model SiteSetting {
+  id String @id @default(cuid())
+
+  key   String  @unique
+  value String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
