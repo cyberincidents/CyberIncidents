@@ -10,6 +10,41 @@ type RouteContext = {
 };
 
 /* =====================================================
+   CALCULATE READING TIME
+===================================================== */
+
+function calculateReadTime(content: string) {
+  const cleanContent = content
+    // Remove HTML tags
+    .replace(/<[^>]*>/g, " ")
+
+    // Remove Markdown images
+    .replace(/!\[.*?\]\(.*?\)/g, " ")
+
+    // Keep Markdown link text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+
+    // Remove Markdown formatting characters
+    .replace(/#{1,6}\s/g, " ")
+    .replace(/[*_~`]/g, " ")
+
+    // Normalize whitespace
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const words = cleanContent
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const WORDS_PER_MINUTE = 200;
+
+  return Math.max(
+    1,
+    Math.ceil(words.length / WORDS_PER_MINUTE)
+  );
+}
+
+/* =====================================================
    CLEAN IMAGE DATA
 ===================================================== */
 
@@ -68,7 +103,9 @@ async function deleteUnusedCloudinaryImages(
       publicIds.filter(
         (id) =>
           id &&
-          id.startsWith("cyberincidents/blogs/")
+          id.startsWith(
+            "cyberincidents/blogs/"
+          )
       )
     ),
   ];
@@ -101,6 +138,7 @@ async function deleteUnusedCloudinaryImages(
        * still remain successful because the database
        * has already been updated/deleted.
        */
+
       console.error(
         "CLOUDINARY DELETE ERROR:",
         publicId,
@@ -137,7 +175,8 @@ export async function GET(
   context: RouteContext
 ) {
   try {
-    const session = await requireAdmin();
+    const session =
+      await requireAdmin();
 
     if (!session) {
       return NextResponse.json(
@@ -150,7 +189,8 @@ export async function GET(
       );
     }
 
-    const { id } = await context.params;
+    const { id } =
+      await context.params;
 
     const blog =
       await prisma.blog.findUnique({
@@ -193,7 +233,8 @@ export async function GET(
 
     return NextResponse.json(
       {
-        message: "Unable to load blog",
+        message:
+          "Unable to load blog",
       },
       {
         status: 500,
@@ -215,7 +256,8 @@ export async function PUT(
        Authentication
     ------------------------------------------------ */
 
-    const session = await requireAdmin();
+    const session =
+      await requireAdmin();
 
     if (!session) {
       return NextResponse.json(
@@ -232,7 +274,8 @@ export async function PUT(
        Blog ID
     ------------------------------------------------ */
 
-    const { id } = await context.params;
+    const { id } =
+      await context.params;
 
     /* -----------------------------------------------
        Get existing blog
@@ -264,7 +307,8 @@ export async function PUT(
        Request body
     ------------------------------------------------ */
 
-    const body = await request.json();
+    const body =
+      await request.json();
 
     /* -----------------------------------------------
        Basic fields
@@ -327,7 +371,8 @@ export async function PUT(
             (
               fieldId: unknown
             ): fieldId is string =>
-              typeof fieldId === "string"
+              typeof fieldId ===
+              "string"
           )
         : [];
 
@@ -338,7 +383,8 @@ export async function PUT(
     if (!title) {
       return NextResponse.json(
         {
-          message: "Title is required",
+          message:
+            "Title is required",
         },
         {
           status: 400,
@@ -349,7 +395,8 @@ export async function PUT(
     if (!slug) {
       return NextResponse.json(
         {
-          message: "Slug is required",
+          message:
+            "Slug is required",
         },
         {
           status: 400,
@@ -360,7 +407,8 @@ export async function PUT(
     if (!content.trim()) {
       return NextResponse.json(
         {
-          message: "Content is required",
+          message:
+            "Content is required",
         },
         {
           status: 400,
@@ -379,6 +427,15 @@ export async function PUT(
         }
       );
     }
+
+    /* -----------------------------------------------
+       Calculate reading time
+    ------------------------------------------------ */
+
+    const readTime =
+      calculateReadTime(
+        content.trim()
+      );
 
     /* -----------------------------------------------
        Check duplicate slug
@@ -494,7 +551,8 @@ export async function PUT(
       status === "PUBLISHED" &&
       !publishedAt
     ) {
-      publishedAt = new Date();
+      publishedAt =
+        new Date();
     }
 
     if (
@@ -626,12 +684,17 @@ export async function PUT(
 
               data: {
                 title,
+
                 slug,
 
                 excerpt:
                   excerpt || null,
 
                 content,
+
+                // Automatically calculated from
+                // the updated article content.
+                readTime,
 
                 author:
                   "CyberIncidents Team",
@@ -645,13 +708,16 @@ export async function PUT(
                    Fields
                 -------------------------------- */
 
-                    fields: {
-                        create: fieldIds.map(
-                            (fieldId: string) => ({
-                            fieldId,
-                            })
-                        ),
-                        },
+                fields: {
+                  create:
+                    fieldIds.map(
+                      (
+                        fieldId: string
+                      ) => ({
+                        fieldId,
+                      })
+                    ),
+                },
 
                 /* -------------------------------
                    Images
@@ -660,9 +726,7 @@ export async function PUT(
                 images: {
                   create:
                     normalizedImages.map(
-                      (
-                        image
-                      ) => ({
+                      (image) => ({
                         publicId:
                           image.publicId ||
                           `blog-${Date.now()}-${image.sortOrder}`,

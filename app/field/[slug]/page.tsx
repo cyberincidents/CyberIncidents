@@ -3,11 +3,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import BlogCard from "@/components/blog/BlogCard";
-import { getBlogsByField, getFieldBySlug } from "@/lib/data/db-blogs";
+import {
+  getBlogsByField,
+  getFieldBySlug,
+  getLatestBlogs,
+} from "@/lib/data/db-blogs";
 import {
   getFields,
   getFieldSlugs,
 } from "@/lib/data/db-fields";
+import LatestBlogs from "@/components/blog/LatestBlogs";
+
 
 type FieldPageProps = {
   params: Promise<{
@@ -33,13 +39,7 @@ export default async function FieldPage({ params }: FieldPageProps) {
     (blog) => blog.id !== featuredBlog?.id
   );
 
-  const latestBlogs = [...blogs]
-    .sort(
-      (a, b) =>
-        new Date(b.publishedAt ?? 0).getTime() -
-        new Date(a.publishedAt ?? 0).getTime()
-    )
-    .slice(0, 3);
+  const latestBlogs = await getLatestBlogs(3);
 
   const getPrimaryImage = (blog: (typeof blogs)[number]) => {
     return (
@@ -243,60 +243,9 @@ export default async function FieldPage({ params }: FieldPageProps) {
       {/* ============================================================
           LATEST CONTENT
       ============================================================ */}
-      {latestBlogs.length > 0 && (
-        <section className="bg-white">
-          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
-            <div className="mb-9">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#008fd6]">
-                Stay informed
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-                Latest Content
-              </h2>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              {latestBlogs.map((blog) => (
-                <BlogCard
-                  key={blog.id}
-                  blog={{
-                    id: blog.id,
-                    title: blog.title,
-                    slug: blog.slug,
-                    field: field.name,
-                    fieldSlug: field.slug,
-                    excerpt: blog.excerpt ?? "",
-                    content: blog.content,
-                    image:
-                      getPrimaryImage(blog)?.url ??
-                      "/images/blogs/placeholder.jpg",
-                    gallery: blog.images
-                      .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .map((image) => image.url)
-                      .filter((url): url is string => Boolean(url)),
-                    author: blog.author,
-                    publishedAt: blog.publishedAt
-                      ? new Date(
-                          blog.publishedAt
-                        ).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })
-                      : "",
-                    readTime: blog.readTime
-                      ? `${blog.readTime} min read`
-                      : "",
-                    tags: blog.tags.map((item) => item.tag.name),
-                    featured: blog.featured,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+        <LatestBlogs
+                blogs={latestBlogs}
+              />
 
       {/* ============================================================
           OTHER FIELDS

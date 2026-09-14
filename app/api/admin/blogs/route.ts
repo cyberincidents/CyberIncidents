@@ -6,6 +6,41 @@ import {
   sendNewBlogNotification,
 } from "@/lib/notifications/email";
 
+/* =====================================================
+   CALCULATE READING TIME
+===================================================== */
+
+function calculateReadTime(content: string) {
+  const cleanContent = content
+    // Remove HTML tags
+    .replace(/<[^>]*>/g, " ")
+
+    // Remove Markdown images
+    .replace(/!\[.*?\]\(.*?\)/g, " ")
+
+    // Keep Markdown link text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+
+    // Remove Markdown formatting characters
+    .replace(/#{1,6}\s/g, " ")
+    .replace(/[*_~`]/g, " ")
+
+    // Normalize whitespace
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const words = cleanContent
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const WORDS_PER_MINUTE = 200;
+
+  return Math.max(
+    1,
+    Math.ceil(words.length / WORDS_PER_MINUTE)
+  );
+}
+
 export async function POST(request: Request) {
   try {
     // --------------------------------------------------
@@ -97,6 +132,14 @@ export async function POST(request: Request) {
     }
 
     // --------------------------------------------------
+    // Calculate reading time automatically
+    // --------------------------------------------------
+
+    const readTime = calculateReadTime(
+      content.trim()
+    );
+
+    // --------------------------------------------------
     // Normalize status
     // --------------------------------------------------
 
@@ -125,7 +168,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "A blog with this slug already exists",
+          message:
+            "A blog with this slug already exists",
         },
         { status: 409 }
       );
@@ -149,28 +193,34 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          message: "At least one valid field is required",
+          message:
+            "At least one valid field is required",
         },
         { status: 400 }
       );
     }
 
-    const existingFields = await prisma.field.findMany({
-      where: {
-        id: {
-          in: uniqueFieldIds,
+    const existingFields =
+      await prisma.field.findMany({
+        where: {
+          id: {
+            in: uniqueFieldIds,
+          },
         },
-      },
-      select: {
-        id: true,
-      },
-    });
+        select: {
+          id: true,
+        },
+      });
 
-    if (existingFields.length !== uniqueFieldIds.length) {
+    if (
+      existingFields.length !==
+      uniqueFieldIds.length
+    ) {
       return NextResponse.json(
         {
           success: false,
-          message: "One or more selected fields do not exist",
+          message:
+            "One or more selected fields do not exist",
         },
         { status: 400 }
       );
@@ -186,9 +236,11 @@ export async function POST(request: Request) {
             (image: unknown) =>
               typeof image === "object" &&
               image !== null &&
-              typeof (image as { url?: unknown }).url ===
-                "string" &&
-              (image as { url: string }).url.trim().length > 0
+              typeof (image as { url?: unknown })
+                .url === "string" &&
+              (
+                image as { url: string }
+              ).url.trim().length > 0
           )
           .map(
             (
@@ -223,7 +275,8 @@ export async function POST(request: Request) {
                   ? image.sortOrder
                   : index,
 
-              isPrimary: Boolean(image.isPrimary),
+              isPrimary:
+                Boolean(image.isPrimary),
             })
           )
       : [];
@@ -232,20 +285,22 @@ export async function POST(request: Request) {
     // Ensure only one primary image
     // --------------------------------------------------
 
-    const primaryImageIndex = cleanImages.findIndex(
-      (image) => image.isPrimary
-    );
+    const primaryImageIndex =
+      cleanImages.findIndex(
+        (image) => image.isPrimary
+      );
 
-    const normalizedImages = cleanImages.map(
-      (image, index) => ({
-        ...image,
+    const normalizedImages =
+      cleanImages.map(
+        (image, index) => ({
+          ...image,
 
-        isPrimary:
-          primaryImageIndex === -1
-            ? index === 0
-            : index === primaryImageIndex,
-      })
-    );
+          isPrimary:
+            primaryImageIndex === -1
+              ? index === 0
+              : index === primaryImageIndex,
+        })
+      );
 
     // --------------------------------------------------
     // Create blog
@@ -261,6 +316,10 @@ export async function POST(request: Request) {
           excerpt?.trim() || null,
 
         content: content.trim(),
+
+        // Automatically calculated from article content.
+        // 200 words = approximately 1 minute.
+        readTime,
 
         // All articles are published by the
         // CyberIncidents team.

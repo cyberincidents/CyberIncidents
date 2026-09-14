@@ -2,15 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import ArticleContent from "@/components/blog/ArticleContent";
-import BlogCard from "@/components/blog/BlogCard";
-import ShareButtons from "@/components/blog/ShareButtons";
 import BlogViewTracker from "@/components/blog/BlogViewTracker";
+import BlogCard from "@/components/blog/BlogCard";
+import LatestBlogs from "@/components/blog/LatestBlogs";
+import RelatedArticles from "@/components/blog/RelatedArticles";
+import ShareButtons from "@/components/blog/ShareButtons";
 
 import {
+  getAllPublishedBlogSlugs,
   getBlogBySlug,
   getBlogsByField,
   getLatestBlogs,
-  getAllPublishedBlogSlugs,
 } from "@/lib/data/db-blogs";
 
 type BlogPageProps = {
@@ -103,10 +105,9 @@ function toBlogCardData(
       primaryImage?.url ??
       "/images/blogs/placeholder.jpg",
 
-    gallery:
-      primaryImage?.url
-        ? [primaryImage.url]
-        : [],
+    gallery: primaryImage?.url
+      ? [primaryImage.url]
+      : [],
 
     author:
       blog.author,
@@ -119,10 +120,9 @@ function toBlogCardData(
         ? `${blog.readTime} min read`
         : "",
 
-    tags:
-      blog.tags.map(
-        (item) => item.tag.name
-      ),
+    tags: blog.tags.map(
+      (item) => item.tag.name
+    ),
 
     featured:
       blog.featured,
@@ -288,7 +288,10 @@ export default async function BlogPage({
           <div className="overflow-hidden rounded-2xl">
             <img
               src={primaryImage.url}
-              alt=""
+              alt={
+                primaryImage.altText ??
+                blog.title
+              }
               className="h-auto max-h-[700px] w-full object-cover"
             />
           </div>
@@ -358,68 +361,17 @@ export default async function BlogPage({
           RELATED CONTENT
       ========================================================== */}
 
-      {filteredRelatedBlogs.length >
-        0 && (
-        <section className="border-t border-gray-100 bg-[#fafafa]">
-          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
-            <div className="mb-9">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#008fd6]">
-                Continue reading
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-                Related Articles
-              </h2>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredRelatedBlogs.map(
-                (relatedBlog) => (
-                  <BlogCard
-                    key={relatedBlog.id}
-                    blog={toBlogCardData(
-                      relatedBlog
-                    )}
-                  />
-                )
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+      <RelatedArticles
+        blogs={filteredRelatedBlogs}
+      />
 
       {/* ==========================================================
           LATEST CONTENT
       ========================================================== */}
 
-      {latestBlogs.length > 0 && (
-        <section className="bg-white">
-          <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
-            <div className="mb-9">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#008fd6]">
-                Stay informed
-              </p>
-
-              <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-                Latest Content
-              </h2>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {latestBlogs.map(
-                (latestBlog) => (
-                  <BlogCard
-                    key={latestBlog.id}
-                    blog={toBlogCardData(
-                      latestBlog
-                    )}
-                  />
-                )
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+      <LatestBlogs
+        blogs={latestBlogs}
+      />
     </main>
   );
 }
