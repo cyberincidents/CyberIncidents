@@ -1150,7 +1150,7 @@ export default function BlogEditForm({
               STANDALONE / LEGACY FIELDS
           ================================================= */}
 
-          {standaloneFields.length >
+          {/* {standaloneFields.length >
             0 && (
             <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[#030817]">
               <div className="flex items-center gap-4 px-6 py-5">
@@ -1218,7 +1218,7 @@ export default function BlogEditForm({
                 )}
               </div>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* =================================================
