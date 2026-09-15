@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import cloudinary from "@/lib/cloudinary";
 
+import { revalidatePath } from "next/cache";
+
 type RouteContext = {
   params: Promise<{
     id: string;
@@ -786,6 +788,10 @@ export async function PUT(
     /* -----------------------------------------------
        Response
     ------------------------------------------------ */
+    return NextResponse.json({
+    success: true,
+    blog,
+  });
 
     return NextResponse.json({
       success: true,

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 type LatestBlog = {
   id: string;
   title: string;
@@ -117,13 +119,7 @@ export default function LatestBlogs({ blogs }: LatestBlogsProps) {
             </p>
           </div>
 
-          <Link
-            href="/blog"
-            className="group inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-[#00a8ff]"
-          >
-            All posts
-            <ArrowIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </Link>
+          
         </div>
 
         <div className="mt-12 border-t border-gray-200 dark:border-white/10">

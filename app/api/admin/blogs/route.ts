@@ -6,6 +6,8 @@ import {
   sendNewBlogNotification,
 } from "@/lib/notifications/email";
 
+import { revalidatePath } from "next/cache";
+
 /* =====================================================
    CALCULATE READING TIME
 ===================================================== */
@@ -398,10 +400,19 @@ export async function POST(request: Request) {
         },
       },
     });
+    
+    // --------------------------------------------------
+    // Revalidate public blog pages
+    // --------------------------------------------------
+
+    revalidatePath("/");
+    revalidatePath("/field/[slug]", "page");
+    revalidatePath("/blog/[slug]", "page");
 
     // --------------------------------------------------
     // Notify subscribers
     //
+
     // Only send when the newly created blog is published.
     //
     // The notification is intentionally not awaited so
