@@ -183,7 +183,7 @@ export default function Navbar() {
                   aria-expanded={fieldsOpen}
                   aria-haspopup="menu"
                 >
-                  Fields
+                  Category
 
                   <svg
                     width="11"
@@ -211,7 +211,7 @@ export default function Navbar() {
                   >
                     <div className="px-3 py-2">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#00a8ff]">
-                        Explore Fields
+                        Explore Categories
                       </p>
                     </div>
 
