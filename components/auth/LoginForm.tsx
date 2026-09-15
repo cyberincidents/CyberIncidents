@@ -200,7 +200,7 @@ export default function LoginForm({
         <div>
           <label
             htmlFor="login-email"
-            className="mb-2 block text-sm font-medium text-slate-700"
+            className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
           >
             Email
           </label>
@@ -216,7 +216,7 @@ export default function LoginForm({
             autoComplete="email"
             required
             disabled={isLoading}
-            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100"
+            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100 dark:border-white/15 dark:bg-[#090d14] dark:text-white dark:placeholder:text-gray-500 dark:focus:border-[#00a8ff] dark:focus:ring-[#00a8ff]/20 dark:disabled:bg-[#060b13]"
           />
         </div>
 
@@ -225,7 +225,7 @@ export default function LoginForm({
         <div>
           <label
             htmlFor="login-password"
-            className="mb-2 block text-sm font-medium text-slate-700"
+            className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
           >
             Password
           </label>
@@ -246,7 +246,7 @@ export default function LoginForm({
               autoComplete="current-password"
               required
               disabled={isLoading}
-              className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 pr-12 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100"
+              className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 pr-12 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100 disabled:bg-slate-100 dark:border-white/15 dark:bg-[#090d14] dark:text-white dark:placeholder:text-gray-500 dark:focus:border-[#00a8ff] dark:focus:ring-[#00a8ff]/20 dark:disabled:bg-[#060b13]"
             />
 
             <button
@@ -262,7 +262,7 @@ export default function LoginForm({
                   ? "Hide password"
                   : "Show password"
               }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700 dark:text-gray-400 dark:hover:text-white"
             >
               <EyeIcon
                 visible={showPassword}
@@ -289,13 +289,13 @@ export default function LoginForm({
       ================================================= */}
 
       <div className="my-6 flex items-center gap-4">
-        <div className="h-px flex-1 bg-slate-200" />
+        <div className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
 
-        <span className="text-xs font-medium text-slate-400">
+        <span className="text-xs font-medium text-slate-400 dark:text-gray-500">
           OR
         </span>
 
-        <div className="h-px flex-1 bg-slate-200" />
+        <div className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
       </div>
 
       {/* =================================================
@@ -306,7 +306,7 @@ export default function LoginForm({
         type="button"
         onClick={handleGoogleSignIn}
         disabled={isLoading}
-        className="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:bg-[#090d14] dark:text-zinc-200 dark:hover:bg-white/5"
       >
         {googleLoading ? (
           "Connecting to Google..."
@@ -348,12 +348,12 @@ export default function LoginForm({
           REGISTER
       ================================================= */}
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-slate-500 dark:text-gray-400">
         Don't have an account?{" "}
 
         <Link
           href="/register"
-          className="font-medium text-cyan-600 hover:text-cyan-700"
+          className="font-medium text-[#0284c7] hover:text-[#0369a1] dark:text-[#00a8ff] dark:hover:text-[#00d9ff]"
         >
           Create account
         </Link>
