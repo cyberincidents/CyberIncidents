@@ -11,7 +11,7 @@ import {
 import { getFields, getFieldSlugs } from "@/lib/data/db-fields";
 import LatestBlogs from "@/components/blog/LatestBlogs";
 
-export const dynamic = "force-dynamic";
+// export const dynamic = "force-dynamic";
 
 type FieldPageProps = {
   params: Promise<{

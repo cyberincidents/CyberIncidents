@@ -7,7 +7,7 @@ import LatestBlogs from "@/components/blog/LatestBlogs";
 import RelatedArticles from "@/components/blog/RelatedArticles";
 import ShareButtons from "@/components/blog/ShareButtons";
 
-export const dynamic = "force-dynamic";
+// export const dynamic = "force-dynamic";
 
 import {
   getAllPublishedBlogSlugs,

@@ -5,7 +5,7 @@ import { getFields } from "@/lib/data/db-fields";
 import LatestBlogs from "@/components/blog/LatestBlogs";
 import { getLatestBlogs } from "@/lib/data/db-blogs";
 
-export const dynamic = "force-dynamic";
+// export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const fields = await getFields();
