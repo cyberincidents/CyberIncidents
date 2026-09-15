@@ -14,10 +14,18 @@ export default async function NewBlogPage() {
     redirect("/");
   }
 
+  /*
+   * Fetch every database Field.
+   *
+   * The BlogForm will display only the fields
+   * defined in lib/data/fields.ts.
+   */
   const fields = await prisma.field.findMany({
     select: {
       id: true,
       name: true,
+      slug: true,
+      number: true,
     },
     orderBy: {
       number: "asc",

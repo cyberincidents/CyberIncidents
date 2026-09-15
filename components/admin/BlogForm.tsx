@@ -1,13 +1,55 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import ImageUploader from "@/components/admin/ImageUploader";
 
+import {
+  fields as navbarFields,
+} from "@/lib/data/fields";
+/* =====================================================
+   TYPES
+===================================================== */
+
 type Field = {
   id: string;
   name: string;
+  slug: string;
+  number: string | null;
+};
+
+type BlogImage = {
+  id: string;
+  publicId: string;
+  url: string | null;
+  width: number | null;
+  height: number | null;
+  sortOrder: number;
+  isPrimary: boolean;
+};
+
+type BlogField = {
+  fieldId: string;
+  field: Field;
+};
+
+type Blog = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  access: "FREE" | "PAID";
+  featured: boolean;
+  fields: BlogField[];
+  images: BlogImage[];
+};
+
+type Props = {
+  blog?: Blog;
+  fields: Field[];
 };
 
 type UploadedImage = {
@@ -17,103 +59,263 @@ type UploadedImage = {
   height: number;
 };
 
-type TextBlock = {
-  id: string;
-  type: "text";
-  text: string;
-};
+type ContentBlock =
+  | {
+      type: "text";
+      text: string;
+    }
+  | {
+      type: "image";
+      image: UploadedImage | null;
+    };
 
-type ImageBlock = {
-  id: string;
-  type: "image";
-  url: string;
-  publicId: string;
-  width: number;
-  height: number;
-};
+/* =====================================================
+   PARSE CONTENT
+===================================================== */
 
-type ContentBlock = TextBlock | ImageBlock;
+function parseContent(content: string): ContentBlock[] {
+  try {
+    const parsed = JSON.parse(content);
 
-type BlogFormProps = {
-  fields: Field[];
-};
+    if (!Array.isArray(parsed)) {
+      return [
+        {
+          type: "text",
+          text: content,
+        },
+      ];
+    }
 
-function createId() {
-  return `${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2)}`;
+    return parsed
+      .filter(
+        (block) =>
+          block?.type === "text" ||
+          block?.type === "image"
+      )
+      .map((block) => {
+        if (block.type === "text") {
+          return {
+            type: "text" as const,
+            text: String(block.text ?? ""),
+          };
+        }
+
+        return {
+          type: "image" as const,
+          image: block.url
+            ? {
+                publicId: String(
+                  block.publicId ?? block.url
+                ),
+                url: String(block.url),
+                width: Number(block.width ?? 0),
+                height: Number(block.height ?? 0),
+              }
+            : null,
+        };
+      });
+  } catch {
+    return [
+      {
+        type: "text",
+        text: content,
+      },
+    ];
+  }
 }
 
-function generateSlug(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-}
+/* =====================================================
+   COMPONENT
+===================================================== */
 
-export default function BlogForm({
+export default function BlogEditForm({
+  blog,
   fields,
-}: BlogFormProps) {
+}: Props) {
   const router = useRouter();
 
-  const [title, setTitle] =
-    useState("");
+  /*
+   * Supports both:
+   *
+   * CREATE
+   * <BlogEditForm fields={fields} />
+   *
+   * EDIT
+   * <BlogEditForm blog={blog} fields={fields} />
+   */
 
-  const [slug, setSlug] =
-    useState("");
+  const formBlog: Blog = blog ?? {
+    id: "",
+    title: "",
+    slug: "",
+    excerpt: null,
+    content: "",
+    status: "DRAFT",
+    access: "FREE",
+    featured: false,
+    fields: [],
+    images: [],
+  };
 
-  const [excerpt, setExcerpt] =
-    useState("");
+  const isEditMode = formBlog.id.length > 0;
+
+  /* ===================================================
+     EXISTING PRIMARY IMAGE
+  =================================================== */
+
+  const existingPrimaryImage =
+    formBlog.images.find(
+      (image) => image.isPrimary
+    ) ??
+    formBlog.images[0] ??
+    null;
+
+  /* ===================================================
+     EXISTING CONTENT
+  =================================================== */
+
+  const initialBlocks = formBlog.content.trim()
+    ? parseContent(formBlog.content)
+    : [
+        {
+          type: "text" as const,
+          text: "",
+        },
+      ];
+
+  /*
+   * Match existing inline images with their
+   * BlogImage database records.
+   */
+
+  const initialBlocksWithImages =
+    initialBlocks.map((block) => {
+      if (
+        block.type !== "image" ||
+        !block.image
+      ) {
+        return block;
+      }
+
+      const existingImage =
+        formBlog.images.find(
+          (image) =>
+            !image.isPrimary &&
+            image.url === block.image?.url
+        );
+
+      if (!existingImage) {
+        return block;
+      }
+
+      return {
+        type: "image" as const,
+        image: {
+          publicId: existingImage.publicId,
+          url: existingImage.url ?? "",
+          width: existingImage.width ?? 0,
+          height: existingImage.height ?? 0,
+        },
+      };
+    });
+
+  /* ===================================================
+     STATE
+  =================================================== */
+
+  const [title, setTitle] = useState(
+    formBlog.title
+  );
+
+  const [slug, setSlug] = useState(
+    formBlog.slug
+  );
+
+  const [excerpt, setExcerpt] = useState(
+    formBlog.excerpt ?? ""
+  );
 
   const [blocks, setBlocks] =
-    useState<ContentBlock[]>([
-      {
-        id: createId(),
-        type: "text",
-        text: "",
-      },
-    ]);
-
-  const [access, setAccess] =
-    useState<"FREE" | "PAID">("FREE");
-
-  const [status, setStatus] =
-    useState<"DRAFT" | "PUBLISHED">(
-      "DRAFT"
+    useState<ContentBlock[]>(
+      initialBlocksWithImages
     );
 
-  const [featured, setFeatured] =
-    useState(false);
-
+  /*
+   * IMPORTANT:
+   *
+   * The selected fields are identified by their
+   * database IDs.
+   *
+   * The `fields` prop comes from the same Field
+   * records used by the navbar.
+   */
   const [selectedFields, setSelectedFields] =
-    useState<string[]>([]);
+    useState<string[]>(
+      formBlog.fields.map(
+        (item) => item.fieldId
+      )
+    );
 
   const [primaryImage, setPrimaryImage] =
-    useState<UploadedImage | null>(null);
+    useState<UploadedImage | null>(
+      existingPrimaryImage?.url
+        ? {
+            publicId:
+              existingPrimaryImage.publicId,
+            url: existingPrimaryImage.url,
+            width:
+              existingPrimaryImage.width ?? 0,
+            height:
+              existingPrimaryImage.height ?? 0,
+          }
+        : null
+    );
 
-  const [saving, setSaving] =
-    useState(false);
+  const [status, setStatus] = useState(
+    formBlog.status
+  );
 
-  const [error, setError] =
-    useState("");
+  const [access, setAccess] = useState(
+    formBlog.access
+  );
 
-  // --------------------------------------------------
-  // Content blocks
-  // --------------------------------------------------
+  const [featured, setFeatured] = useState(
+    formBlog.featured
+  );
+
+  const [saving, setSaving] = useState(false);
+
+  const [message, setMessage] = useState("");
+
+  /* ===================================================
+     FIELDS
+  =================================================== */
+
+  function toggleField(fieldId: string) {
+    setSelectedFields((current) =>
+      current.includes(fieldId)
+        ? current.filter(
+            (id) => id !== fieldId
+          )
+        : [...current, fieldId]
+    );
+  }
+
+  /* ===================================================
+     CONTENT BLOCKS
+  =================================================== */
 
   function updateTextBlock(
-    id: string,
-    text: string
+    index: number,
+    value: string
   ) {
     setBlocks((current) =>
-      current.map((block) =>
-        block.id === id &&
+      current.map((block, i) =>
+        i === index &&
         block.type === "text"
           ? {
               ...block,
-              text,
+              text: value,
             }
           : block
       )
@@ -121,249 +323,139 @@ export default function BlogForm({
   }
 
   function updateImageBlock(
-    id: string,
-    image: UploadedImage
+    index: number,
+    image: UploadedImage | null
   ) {
     setBlocks((current) =>
-      current.map((block) =>
-        block.id === id &&
+      current.map((block, i) =>
+        i === index &&
         block.type === "image"
           ? {
               ...block,
-              url: image.url,
-              publicId: image.publicId,
-              width: image.width,
-              height: image.height,
+              image,
             }
           : block
       )
     );
   }
 
-  function removeImageFromBlock(
-    id: string
-  ) {
+  function addTextBlock() {
+    setBlocks((current) => [
+      ...current,
+      {
+        type: "text",
+        text: "",
+      },
+    ]);
+  }
+
+  function addImageBlock() {
+    setBlocks((current) => [
+      ...current,
+      {
+        type: "image",
+        image: null,
+      },
+    ]);
+  }
+
+  function removeBlock(index: number) {
     setBlocks((current) =>
-      current.map((block) =>
-        block.id === id &&
-        block.type === "image"
-          ? {
-              ...block,
-              url: "",
-              publicId: "",
-              width: 0,
-              height: 0,
-            }
-          : block
+      current.filter(
+        (_, i) => i !== index
       )
     );
-  }
-
-  function addTextBlock(
-    afterId?: string
-  ) {
-    const newBlock: TextBlock = {
-      id: createId(),
-      type: "text",
-      text: "",
-    };
-
-    if (!afterId) {
-      setBlocks((current) => [
-        ...current,
-        newBlock,
-      ]);
-
-      return;
-    }
-
-    setBlocks((current) => {
-      const index = current.findIndex(
-        (block) =>
-          block.id === afterId
-      );
-
-      if (index === -1) {
-        return [
-          ...current,
-          newBlock,
-        ];
-      }
-
-      const next = [...current];
-
-      next.splice(
-        index + 1,
-        0,
-        newBlock
-      );
-
-      return next;
-    });
-  }
-
-  function addImageBlock(
-    afterId?: string
-  ) {
-    const newBlock: ImageBlock = {
-      id: createId(),
-      type: "image",
-      url: "",
-      publicId: "",
-      width: 0,
-      height: 0,
-    };
-
-    if (!afterId) {
-      setBlocks((current) => [
-        ...current,
-        newBlock,
-      ]);
-
-      return;
-    }
-
-    setBlocks((current) => {
-      const index = current.findIndex(
-        (block) =>
-          block.id === afterId
-      );
-
-      if (index === -1) {
-        return [
-          ...current,
-          newBlock,
-        ];
-      }
-
-      const next = [...current];
-
-      next.splice(
-        index + 1,
-        0,
-        newBlock
-      );
-
-      return next;
-    });
-  }
-
-  function removeBlock(id: string) {
-    setBlocks((current) => {
-      if (current.length === 1) {
-        return current;
-      }
-
-      return current.filter(
-        (block) => block.id !== id
-      );
-    });
   }
 
   function moveBlock(
-    id: string,
+    index: number,
     direction: "up" | "down"
   ) {
     setBlocks((current) => {
-      const index =
-        current.findIndex(
-          (block) =>
-            block.id === id
-        );
+      const next = [...current];
 
-      if (index === -1) {
-        return current;
-      }
-
-      const newIndex =
+      const target =
         direction === "up"
           ? index - 1
           : index + 1;
 
       if (
-        newIndex < 0 ||
-        newIndex >= current.length
+        target < 0 ||
+        target >= next.length
       ) {
         return current;
       }
 
-      const next = [...current];
-
-      const [moved] =
-        next.splice(index, 1);
-
-      next.splice(
-        newIndex,
-        0,
-        moved
-      );
+      [
+        next[index],
+        next[target],
+      ] = [
+        next[target],
+        next[index],
+      ];
 
       return next;
     });
   }
 
-  // --------------------------------------------------
-  // Fields
-  // --------------------------------------------------
-
-  function toggleField(
-    fieldId: string
-  ) {
-    setSelectedFields(
-      (current) =>
-        current.includes(fieldId)
-          ? current.filter(
-              (id) => id !== fieldId
-            )
-          : [
-              ...current,
-              fieldId,
-            ]
-    );
-  }
-
-  // --------------------------------------------------
-  // Submit
-  // --------------------------------------------------
+  /* ===================================================
+     SUBMIT
+  =================================================== */
 
   async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    setError("");
+    setMessage("");
+
+    /* -----------------------------------------------
+       Validate title
+    ------------------------------------------------ */
 
     if (!title.trim()) {
-      setError(
+      setMessage(
         "Title is required."
       );
-
       return;
     }
+
+    /* -----------------------------------------------
+       Validate slug
+    ------------------------------------------------ */
 
     if (!slug.trim()) {
-      setError(
+      setMessage(
         "Slug is required."
       );
-
       return;
     }
+
+    /* -----------------------------------------------
+       Validate primary image
+    ------------------------------------------------ */
 
     if (!primaryImage) {
-      setError(
+      setMessage(
         "Primary image is required."
       );
-
       return;
     }
+
+    /* -----------------------------------------------
+       Validate fields
+    ------------------------------------------------ */
 
     if (selectedFields.length === 0) {
-      setError(
+      setMessage(
         "Select at least one cybersecurity field."
       );
-
       return;
     }
+
+    /* -----------------------------------------------
+       Validate article content
+    ------------------------------------------------ */
 
     const hasText = blocks.some(
       (block) =>
@@ -372,12 +464,15 @@ export default function BlogForm({
     );
 
     if (!hasText) {
-      setError(
+      setMessage(
         "Article content is required."
       );
-
       return;
     }
+
+    /* -----------------------------------------------
+       Remove empty blocks
+    ------------------------------------------------ */
 
     const cleanedBlocks =
       blocks.filter((block) => {
@@ -387,134 +482,142 @@ export default function BlogForm({
           );
         }
 
-        return block.url.trim().length > 0;
+        return Boolean(
+          block.image?.url?.trim()
+        );
       });
 
-    if (cleanedBlocks.length === 0) {
-      setError(
-        "Article content is required."
-      );
+    /* -----------------------------------------------
+       Serialize article content
+    ------------------------------------------------ */
 
-      return;
-    }
+    const contentBlocks =
+      cleanedBlocks.map((block) => {
+        if (block.type === "text") {
+          return {
+            type: "text",
+            text: block.text.trim(),
+          };
+        }
 
-    setSaving(true);
+        return {
+          type: "image",
+          url: block.image!.url,
+        };
+      });
+
+    /* -----------------------------------------------
+       Collect inline images
+    ------------------------------------------------ */
+
+    const inlineImages =
+      cleanedBlocks
+        .filter(
+          (
+            block
+          ): block is {
+            type: "image";
+            image: UploadedImage;
+          } =>
+            block.type === "image" &&
+            !!block.image?.url
+        )
+        .map(
+          (
+            block,
+            index
+          ) => ({
+            publicId:
+              block.image.publicId,
+            url:
+              block.image.url,
+            width:
+              block.image.width || null,
+            height:
+              block.image.height || null,
+            sortOrder:
+              index + 1,
+            isPrimary: false,
+          })
+        );
+
+    /* -----------------------------------------------
+       All images
+    ------------------------------------------------ */
+
+    const images = [
+      {
+        publicId:
+          primaryImage.publicId,
+        url:
+          primaryImage.url,
+        width:
+          primaryImage.width || null,
+        height:
+          primaryImage.height || null,
+        sortOrder: 0,
+        isPrimary: true,
+      },
+      ...inlineImages,
+    ];
+
+    /* =================================================
+       SAVE
+    ================================================= */
 
     try {
-      const contentBlocks =
-        cleanedBlocks.map(
-          (block) => {
-            if (
-              block.type === "text"
-            ) {
-              return {
-                type: "text",
-                text: block.text.trim(),
-              };
-            }
+      setSaving(true);
 
-            return {
-              type: "image",
-              url: block.url.trim(),
-            };
-          }
-        );
-
-      const inlineImages =
-        cleanedBlocks
-          .filter(
-            (
-              block
-            ): block is ImageBlock =>
-              block.type ===
-                "image" &&
-              block.url.trim()
-                .length > 0
-          )
-          .map(
-            (block, index) => ({
-              publicId:
-                block.publicId,
-              url: block.url,
-              width:
-                block.width || null,
-              height:
-                block.height || null,
-              sortOrder:
-                index + 1,
-              isPrimary: false,
-            })
-          );
-
-      const images = [
+      const response = await fetch(
+        isEditMode
+          ? `/api/admin/blogs/${formBlog.id}`
+          : "/api/admin/blogs",
         {
-          publicId:
-            primaryImage.publicId,
+          method: isEditMode
+            ? "PUT"
+            : "POST",
 
-          url:
-            primaryImage.url,
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
 
-          width:
-            primaryImage.width,
+          body: JSON.stringify({
+            title: title.trim(),
+            slug: slug.trim(),
+            excerpt: excerpt.trim(),
+            content:
+              JSON.stringify(
+                contentBlocks
+              ),
+            access,
+            status,
+            featured,
 
-          height:
-            primaryImage.height,
+            /*
+             * These are the IDs of the SAME
+             * cybersecurity fields used by the
+             * navbar.
+             */
+            fieldIds: selectedFields,
 
-          sortOrder: 0,
-
-          isPrimary: true,
-        },
-
-        ...inlineImages,
-      ];
-
-      const response =
-        await fetch(
-          "/api/admin/blogs",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              title:
-                title.trim(),
-
-              slug:
-                slug.trim(),
-
-              excerpt:
-                excerpt.trim(),
-
-              content:
-                JSON.stringify(
-                  contentBlocks
-                ),
-
-              access,
-
-              status,
-
-              featured,
-
-              fieldIds:
-                selectedFields,
-
-              images,
-            }),
-          }
-        );
+            images,
+          }),
+        }
+      );
 
       const data =
         await response.json();
 
       if (!response.ok) {
-        setError(
+        setMessage(
           data.message ||
-            "Unable to create blog."
+            data.error ||
+            `Unable to ${
+              isEditMode
+                ? "update"
+                : "create"
+            } blog.`
         );
 
         return;
@@ -527,75 +630,74 @@ export default function BlogForm({
       router.refresh();
     } catch (error) {
       console.error(
-        "CREATE BLOG ERROR:",
+        "BLOG SAVE ERROR:",
         error
       );
 
-      setError(
-        "Something went wrong while creating the blog."
+      setMessage(
+        `Something went wrong while ${
+          isEditMode
+            ? "updating"
+            : "creating"
+        } the blog.`
       );
     } finally {
       setSaving(false);
     }
   }
 
-  // --------------------------------------------------
-  // UI
-  // --------------------------------------------------
+  /* ===================================================
+     UI
+  =================================================== */
 
   return (
     <form
       onSubmit={handleSubmit}
       className="space-y-8"
     >
-      {/* Error */}
+      {/* =================================================
+          ERROR / STATUS
+      ================================================= */}
 
-      {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {error}
+      {message && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {message}
         </div>
       )}
 
-      {/* Basic Information */}
+      {/* =================================================
+          BLOG INFORMATION
+      ================================================= */}
 
-      <section className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <h2 className="mb-6 text-lg font-semibold text-white">
-          Basic Information
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 className="mb-6 text-xl font-semibold text-white">
+          Blog Information
         </h2>
 
         <div className="space-y-5">
           {/* Title */}
 
           <div>
-            <label className="mb-2 block text-sm text-gray-300">
+            <label className="mb-2 block text-sm text-slate-300">
               Title
             </label>
 
             <input
               value={title}
-              onChange={(event) => {
-                const value =
-                  event.target.value;
-
-                setTitle(value);
-
-                if (!slug) {
-                  setSlug(
-                    generateSlug(
-                      value
-                    )
-                  );
-                }
-              }}
-              placeholder="Enter blog title"
-              className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-gray-600 focus:border-cyan-400"
+              onChange={(event) =>
+                setTitle(
+                  event.target.value
+                )
+              }
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              placeholder="Blog title"
             />
           </div>
 
           {/* Slug */}
 
           <div>
-            <label className="mb-2 block text-sm text-gray-300">
+            <label className="mb-2 block text-sm text-slate-300">
               Slug
             </label>
 
@@ -603,26 +705,18 @@ export default function BlogForm({
               value={slug}
               onChange={(event) =>
                 setSlug(
-                  generateSlug(
-                    event.target.value
-                  )
+                  event.target.value
                 )
               }
-              placeholder="blog-url-slug"
-              className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-gray-600 focus:border-cyan-400"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              placeholder="blog-slug"
             />
-
-            <p className="mt-2 text-xs text-gray-500">
-              URL: /blog/
-              {slug ||
-                "your-blog-slug"}
-            </p>
           </div>
 
           {/* Excerpt */}
 
           <div>
-            <label className="mb-2 block text-sm text-gray-300">
+            <label className="mb-2 block text-sm text-slate-300">
               Excerpt
             </label>
 
@@ -634,69 +728,105 @@ export default function BlogForm({
                 )
               }
               rows={4}
-              placeholder="Short description shown on blog cards..."
-              className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-gray-600 focus:border-cyan-400"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              placeholder="Short blog description"
             />
           </div>
         </div>
       </section>
 
-      {/* Primary Image */}
+      {/* =================================================
+          PRIMARY IMAGE
+      ================================================= */}
 
-      <section className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <h2 className="mb-2 text-lg font-semibold text-white">
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 className="mb-2 text-xl font-semibold text-white">
           Primary Image
         </h2>
 
-        <p className="mb-5 text-sm text-gray-500">
-          This image appears at the top of the article and on blog cards.
+        <p className="mb-5 text-sm text-slate-400">
+          This image appears at the beginning
+          of the article and on blog cards.
         </p>
 
-        <ImageUploader
-          label="Upload Primary Image"
-          value={
-            primaryImage?.url
-          }
-          required
-          onUpload={(image) =>
-            setPrimaryImage(
-              image
-            )
-          }
-          onRemove={() =>
-            setPrimaryImage(
-              null
-            )
-          }
-        />
+        <div className="space-y-4">
+          <ImageUploader
+            value={
+              primaryImage?.url ??
+              undefined
+            }
+            onUpload={(image) =>
+              setPrimaryImage(image)
+            }
+            onRemove={() =>
+              setPrimaryImage(null)
+            }
+            label="Primary Image"
+            required
+          />
+
+          {primaryImage && (
+            <button
+              type="button"
+              onClick={() =>
+                setPrimaryImage(null)
+              }
+              className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
+            >
+              Remove Image
+            </button>
+          )}
+        </div>
       </section>
 
-      {/* Article Content */}
+      {/* =================================================
+          ARTICLE CONTENT
+      ================================================= */}
 
-      <section className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-white">
-            Article Content
-          </h2>
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white">
+              Article Content
+            </h2>
 
-          <p className="mt-2 text-sm text-gray-500">
-            Build the article using text and image blocks. Images will appear exactly where you place them.
-          </p>
+            <p className="mt-1 text-sm text-slate-400">
+              Text and images can be arranged
+              in any order.
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={addTextBlock}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-800"
+            >
+              + Text
+            </button>
+
+            <button
+              type="button"
+              onClick={addImageBlock}
+              className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
+            >
+              + Image
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
           {blocks.map(
             (block, index) => (
               <div
-                key={block.id}
-                className="rounded-xl border border-white/10 bg-black/20 p-4"
+                key={index}
+                className="rounded-xl border border-slate-700 bg-slate-950 p-4"
               >
-                {/* Block header */}
+                {/* Block Header */}
 
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    {block.type ===
-                    "text"
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-cyan-400">
+                    {block.type === "text"
                       ? `Text ${
                           index + 1
                         }`
@@ -705,7 +835,9 @@ export default function BlogForm({
                         }`}
                   </span>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex gap-2">
+                    {/* Move Up */}
+
                     <button
                       type="button"
                       disabled={
@@ -713,52 +845,51 @@ export default function BlogForm({
                       }
                       onClick={() =>
                         moveBlock(
-                          block.id,
+                          index,
                           "up"
                         )
                       }
-                      className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-white/5 hover:text-white disabled:opacity-20"
+                      className="rounded bg-slate-800 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:opacity-30"
                     >
                       ↑
                     </button>
+
+                    {/* Move Down */}
 
                     <button
                       type="button"
                       disabled={
                         index ===
-                        blocks.length -
-                          1
+                        blocks.length - 1
                       }
                       onClick={() =>
                         moveBlock(
-                          block.id,
+                          index,
                           "down"
                         )
                       }
-                      className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-white/5 hover:text-white disabled:opacity-20"
+                      className="rounded bg-slate-800 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:opacity-30"
                     >
                       ↓
                     </button>
+
+                    {/* Remove */}
 
                     <button
                       type="button"
                       onClick={() =>
                         removeBlock(
-                          block.id
+                          index
                         )
                       }
-                      disabled={
-                        blocks.length ===
-                        1
-                      }
-                      className="rounded px-2 py-1 text-xs text-red-400 hover:bg-red-400/10 disabled:opacity-20"
+                      className="rounded bg-red-500/10 px-2 py-1 text-xs text-red-400 hover:bg-red-500/20"
                     >
                       Remove
                     </button>
                   </div>
                 </div>
 
-                {/* Text block */}
+                {/* Text Block */}
 
                 {block.type ===
                   "text" && (
@@ -766,150 +897,204 @@ export default function BlogForm({
                     value={
                       block.text
                     }
-                    onChange={(
-                      event
-                    ) =>
+                    onChange={(event) =>
                       updateTextBlock(
-                        block.id,
-                        event.target
-                          .value
+                        index,
+                        event.target.value
                       )
                     }
-                    rows={8}
-                    placeholder="Write a section of your article..."
-                    className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm leading-7 text-white outline-none placeholder:text-gray-600 focus:border-cyan-400"
+                    rows={7}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
+                    placeholder="Write your article section..."
                   />
                 )}
 
-                {/* Image block */}
+                {/* Image Block */}
 
                 {block.type ===
                   "image" && (
-                  <ImageUploader
-                    label="Article Image"
-                    value={
-                      block.url ||
-                      undefined
-                    }
-                    onUpload={(
-                      image
-                    ) =>
-                      updateImageBlock(
-                        block.id,
+                  <div className="space-y-4">
+                    <ImageUploader
+                      value={
+                        block.image?.url ??
+                        undefined
+                      }
+                      onUpload={(
                         image
-                      )
-                    }
-                    onRemove={() =>
-                      removeImageFromBlock(
-                        block.id
-                      )
-                    }
-                  />
+                      ) =>
+                        updateImageBlock(
+                          index,
+                          image
+                        )
+                      }
+                      onRemove={() =>
+                        updateImageBlock(
+                          index,
+                          null
+                        )
+                      }
+                      label={`Article Image ${
+                        index + 1
+                      }`}
+                    />
+
+                    {block.image && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateImageBlock(
+                            index,
+                            null
+                          )
+                        }
+                        className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
+                      >
+                        Remove Image
+                      </button>
+                    )}
+                  </div>
                 )}
-
-                {/* Add block controls */}
-
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      addTextBlock(
-                        block.id
-                      )
-                    }
-                    className="rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-gray-400 transition hover:border-white/30 hover:text-white"
-                  >
-                    + Text
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      addImageBlock(
-                        block.id
-                      )
-                    }
-                    className="rounded-lg border border-cyan-400/30 px-3 py-2 text-xs font-medium text-cyan-400 transition hover:bg-cyan-400/10"
-                  >
-                    + Image
-                  </button>
-                </div>
               </div>
             )
           )}
         </div>
 
-        {/* Add block at bottom */}
-
-        <div className="mt-5 flex justify-center gap-3 border-t border-white/10 pt-5">
-          <button
-            type="button"
-            onClick={() =>
-              addTextBlock()
-            }
-            className="rounded-lg border border-white/10 px-4 py-2.5 text-sm text-gray-400 hover:border-white/30 hover:text-white"
-          >
-            + Add Text
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              addImageBlock()
-            }
-            className="rounded-lg border border-cyan-400/30 px-4 py-2.5 text-sm text-cyan-400 hover:bg-cyan-400/10"
-          >
-            + Add Image
-          </button>
-        </div>
+        {blocks.length === 0 && (
+          <div className="rounded-xl border border-dashed border-slate-700 px-6 py-10 text-center text-sm text-slate-500">
+            No article blocks.
+            <br />
+            Add text or image content
+            above.
+          </div>
+        )}
       </section>
 
-      {/* Fields */}
+      {/* =================================================
+    CYBERSECURITY FIELDS
+================================================= */}
 
-      <section className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <h2 className="mb-2 text-lg font-semibold text-white">
-          Cybersecurity Fields
-        </h2>
+<section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+  <div className="mb-6">
+    <h2 className="text-xl font-semibold text-white">
+      Cybersecurity Fields
+    </h2>
 
-        <p className="mb-5 text-sm text-gray-500">
-          Select all fields that apply to this article.
-        </p>
+    <p className="mt-2 text-sm text-slate-400">
+      Select the cybersecurity topic areas
+      that this article belongs to.
+    </p>
+  </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {fields.map(
-            (field) => {
+  <div className="space-y-5">
+    {navbarFields.map((category) => (
+      <div
+        key={category.id}
+        className="rounded-xl border border-slate-800 bg-slate-950 p-5"
+      >
+        {/* Parent category */}
+
+        <div className="mb-4 flex items-center gap-3">
+          <span className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10 px-2 text-xs font-bold text-cyan-400">
+            {category.number}
+          </span>
+
+          <div>
+            <h3 className="font-semibold text-white">
+              {category.name}
+            </h3>
+
+            <p className="mt-0.5 text-xs text-slate-500">
+              {category.subcategories.length} topics
+            </p>
+          </div>
+        </div>
+
+        {/* Subcategories */}
+
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {category.subcategories.map(
+            (subcategory) => {
+              /*
+               * Find the corresponding database Field
+               * using the exact same slug used by
+               * the navbar configuration.
+               */
+              const databaseField =
+                fields.find(
+                  (field) =>
+                    field.slug ===
+                    subcategory.slug
+                );
+
+              /*
+               * A category that doesn't yet exist
+               * in PostgreSQL cannot be selected.
+               */
+              if (!databaseField) {
+                return (
+                  <div
+                    key={subcategory.id}
+                    className="rounded-lg border border-dashed border-slate-800 bg-slate-900/50 px-3 py-3 text-sm text-slate-600"
+                    title="This field is not yet available in the database."
+                  >
+                    {subcategory.name}
+                  </div>
+                );
+              }
+
               const selected =
                 selectedFields.includes(
-                  field.id
+                  databaseField.id
                 );
 
               return (
                 <button
-                  key={field.id}
+                  key={subcategory.id}
                   type="button"
                   onClick={() =>
                     toggleField(
-                      field.id
+                      databaseField.id
                     )
                   }
-                  className={`rounded-lg border px-4 py-3 text-left text-sm transition ${
+                  className={`rounded-lg border px-3 py-3 text-left text-sm transition ${
                     selected
                       ? "border-cyan-400 bg-cyan-400/10 text-cyan-300"
-                      : "border-white/10 bg-black/20 text-gray-400 hover:border-white/30 hover:text-white"
+                      : "border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-500 hover:text-white"
                   }`}
                 >
-                  {field.name}
+                  <div className="flex items-start gap-2">
+                    <span
+                      className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
+                        selected
+                          ? "border-cyan-400 bg-cyan-400 text-slate-950"
+                          : "border-slate-600"
+                      }`}
+                    >
+                      {selected
+                        ? "✓"
+                        : ""}
+                    </span>
+
+                    <span>
+                      {subcategory.name}
+                    </span>
+                  </div>
                 </button>
               );
             }
           )}
         </div>
-      </section>
+      </div>
+    ))}
+  </div>
+</section>
 
-      {/* Publishing */}
+      {/* =================================================
+          PUBLISHING
+      ================================================= */}
 
-      <section className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-        <h2 className="mb-6 text-lg font-semibold text-white">
+      <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 className="mb-5 text-xl font-semibold text-white">
           Publishing
         </h2>
 
@@ -917,7 +1102,7 @@ export default function BlogForm({
           {/* Status */}
 
           <div>
-            <label className="mb-2 block text-sm text-gray-300">
+            <label className="mb-2 block text-sm text-slate-300">
               Status
             </label>
 
@@ -929,9 +1114,10 @@ export default function BlogForm({
                     .value as
                     | "DRAFT"
                     | "PUBLISHED"
+                    | "ARCHIVED"
                 )
               }
-              className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white"
             >
               <option value="DRAFT">
                 Draft
@@ -940,13 +1126,17 @@ export default function BlogForm({
               <option value="PUBLISHED">
                 Published
               </option>
+
+              <option value="ARCHIVED">
+                Archived
+              </option>
             </select>
           </div>
 
           {/* Access */}
 
           <div>
-            <label className="mb-2 block text-sm text-gray-300">
+            <label className="mb-2 block text-sm text-slate-300">
               Access
             </label>
 
@@ -960,7 +1150,7 @@ export default function BlogForm({
                     | "PAID"
                 )
               }
-              className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white"
             >
               <option value="FREE">
                 Free
@@ -971,38 +1161,43 @@ export default function BlogForm({
               </option>
             </select>
           </div>
-
-          {/* Featured */}
-
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-black/20 px-4 py-3">
-            <input
-              type="checkbox"
-              checked={featured}
-              onChange={(event) =>
-                setFeatured(
-                  event.target
-                    .checked
-                )
-              }
-              className="h-4 w-4 accent-cyan-400"
-            />
-
-            <span>
-              <span className="block text-sm font-medium text-white">
-                Featured blog
-              </span>
-
-              <span className="text-xs text-gray-500">
-                Highlight this article as featured content.
-              </span>
-            </span>
-          </label>
         </div>
+
+        {/* Featured */}
+
+        <label className="mt-5 flex cursor-pointer items-center gap-3 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={featured}
+            onChange={(event) =>
+              setFeatured(
+                event.target.checked
+              )
+            }
+            className="h-4 w-4 accent-cyan-400"
+          />
+
+          Featured blog
+        </label>
       </section>
 
-      {/* Actions */}
+      {/* =================================================
+          ACTIONS
+      ================================================= */}
 
-      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-white/10 pt-6">
+      <div className="flex flex-wrap gap-3 border-t border-slate-800 pt-6">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-lg bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving
+            ? "Saving..."
+            : isEditMode
+              ? "Save Changes"
+              : "Create Blog"}
+        </button>
+
         <button
           type="button"
           onClick={() =>
@@ -1010,21 +1205,10 @@ export default function BlogForm({
               "/admin/blogs"
             )
           }
-          className="rounded-lg border border-white/10 px-5 py-3 text-sm font-medium text-gray-300 transition hover:bg-white/5 hover:text-white"
+          className="rounded-lg border border-slate-700 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:text-white"
         >
           Cancel
         </button>
-
-        <button
-  type="submit"
-  disabled={saving}
-  onClick={() => {
-    console.log("CREATE BLOG BUTTON CLICKED");
-  }}
-  className="rounded-lg bg-cyan-400 px-6 py-3 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
->
-  {saving ? "Creating..." : "Create Blog"}
-</button>
       </div>
     </form>
   );

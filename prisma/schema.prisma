@@ -26,7 +26,7 @@ model User {
 
   passwordResetTokenHash String?
   passwordResetExpiresAt DateTime?
-  
+
   accounts      Account[]
   sessions      Session[]
   subscriptions Subscription[]
@@ -87,12 +87,19 @@ model Field {
   description String? @db.Text
   number      String?
 
+  // Hierarchical field structure
+  parentId String?
+
+  parent   Field?  @relation("FieldHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Field[] @relation("FieldHierarchy")
+
   blogs BlogField[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([slug])
+  @@index([parentId])
 }
 
 // ─────────────────────────────────────────────
@@ -354,7 +361,7 @@ model NotificationSubscriber {
   verified Boolean @default(false)
   active   Boolean @default(true)
 
-  unsubscribeToken String? @unique
+  unsubscribeToken String?   @unique
   tokenExpiresAt   DateTime?
 
   createdAt DateTime @default(now())

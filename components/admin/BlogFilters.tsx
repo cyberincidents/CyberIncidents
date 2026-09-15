@@ -6,7 +6,6 @@ import { useState, useTransition } from "react";
 type Field = {
   id: string;
   name: string;
-  number: string | null;
 };
 
 type BlogFiltersProps = {
@@ -31,19 +30,49 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
 
   const [isPending, startTransition] = useTransition();
 
-  const activeFilterCount = [currentField, currentStatus, currentAccess, currentFeatured].filter(Boolean).length;
+  const activeFilterCount = [
+    currentField,
+    currentStatus,
+    currentAccess,
+    currentFeatured,
+  ].filter(Boolean).length;
 
   function applyFilters() {
     const params = new URLSearchParams(searchParams.toString());
-    if (field) params.set("field", field); else params.delete("field");
-    if (status) params.set("status", status); else params.delete("status");
-    if (access) params.set("access", access); else params.delete("access");
-    if (featured) params.set("featured", featured); else params.delete("featured");
+
+    if (field) {
+      params.set("field", field);
+    } else {
+      params.delete("field");
+    }
+
+    if (status) {
+      params.set("status", status);
+    } else {
+      params.delete("status");
+    }
+
+    if (access) {
+      params.set("access", access);
+    } else {
+      params.delete("access");
+    }
+
+    if (featured) {
+      params.set("featured", featured);
+    } else {
+      params.delete("featured");
+    }
+
     params.delete("page");
 
     startTransition(() => {
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+
+      router.replace(
+        query ? `${pathname}?${query}` : pathname,
+        { scroll: false }
+      );
     });
   }
 
@@ -54,6 +83,7 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
     setFeatured("");
 
     const params = new URLSearchParams(searchParams.toString());
+
     params.delete("field");
     params.delete("status");
     params.delete("access");
@@ -62,7 +92,11 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
 
     startTransition(() => {
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+
+      router.replace(
+        query ? `${pathname}?${query}` : pathname,
+        { scroll: false }
+      );
     });
   }
 
@@ -76,33 +110,57 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
       >
         <div className="flex items-center gap-3">
           <svg
-            className={`h-4 w-4 text-zinc-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            className={`h-4 w-4 text-zinc-500 transition-transform duration-200 ${
+              isOpen ? "rotate-180" : ""
+            }`}
             viewBox="0 0 20 20"
             fill="currentColor"
+            aria-hidden="true"
           >
-            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z"
+              clipRule="evenodd"
+            />
           </svg>
+
           <div>
-            <h2 className="text-sm font-semibold text-zinc-100">Filters</h2>
-            <p className="mt-0.5 text-xs text-zinc-400">Narrow down your results</p>
+            <h2 className="text-sm font-semibold text-zinc-100">
+              Filters
+            </h2>
+
+            <p className="mt-0.5 text-xs text-zinc-400">
+              Narrow down your results
+            </p>
           </div>
         </div>
+
         <div className="flex items-center gap-3">
           {activeFilterCount > 0 && (
-            <span className="rounded-full bg-[var(--cyber-blue)]/10 border border-[var(--cyber-blue)]/20 px-2.5 py-1 text-xs font-medium text-[var(--cyber-blue)]">
-              {activeFilterCount} {activeFilterCount === 1 ? "active" : "active"}
+            <span className="rounded-full border border-[var(--cyber-blue)]/20 bg-[var(--cyber-blue)]/10 px-2.5 py-1 text-xs font-medium text-[var(--cyber-blue)]">
+              {activeFilterCount}{" "}
+              {activeFilterCount === 1 ? "active" : "active"}
             </span>
           )}
-          <span className="text-xs font-medium text-zinc-500">{isOpen ? "Hide" : "Show"}</span>
+
+          <span className="text-xs font-medium text-zinc-500">
+            {isOpen ? "Hide" : "Show"}
+          </span>
         </div>
       </button>
 
       {isOpen && (
         <div className="border-t border-white/10 bg-[#0a0a0c]/50 px-6 py-5">
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {/* Field */}
+            {/* Category */}
             <div>
-              <label htmlFor="field" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Category</label>
+              <label
+                htmlFor="field"
+                className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              >
+                Category
+              </label>
+
               <select
                 id="field"
                 value={field}
@@ -110,9 +168,10 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
                 className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
                 <option value="">All Categories</option>
+
                 {fields.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.number ? `${item.number}. ` : ""}{item.name}
+                    {item.name}
                   </option>
                 ))}
               </select>
@@ -120,7 +179,13 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
 
             {/* Status */}
             <div>
-              <label htmlFor="status" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Status</label>
+              <label
+                htmlFor="status"
+                className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              >
+                Status
+              </label>
+
               <select
                 id="status"
                 value={status}
@@ -136,7 +201,13 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
 
             {/* Access */}
             <div>
-              <label htmlFor="access" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Access</label>
+              <label
+                htmlFor="access"
+                className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              >
+                Access
+              </label>
+
               <select
                 id="access"
                 value={access}
@@ -151,7 +222,13 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
 
             {/* Featured */}
             <div>
-              <label htmlFor="featured" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Featured</label>
+              <label
+                htmlFor="featured"
+                className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500"
+              >
+                Featured
+              </label>
+
               <select
                 id="featured"
                 value={featured}
@@ -174,6 +251,7 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
             >
               {isPending ? "Applying..." : "Apply Filters"}
             </button>
+
             <button
               type="button"
               onClick={clearFilters}

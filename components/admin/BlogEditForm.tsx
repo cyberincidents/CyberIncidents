@@ -14,6 +14,7 @@ type Field = {
   name: string;
   slug: string;
   number: string | null;
+  parentId: string | null;
 };
 
 type BlogImage = {
@@ -70,9 +71,7 @@ type ContentBlock =
    PARSE CONTENT
 ===================================================== */
 
-function parseContent(
-  content: string
-): ContentBlock[] {
+function parseContent(content: string): ContentBlock[] {
   try {
     const parsed = JSON.parse(content);
 
@@ -95,9 +94,7 @@ function parseContent(
         if (block.type === "text") {
           return {
             type: "text" as const,
-            text: String(
-              block.text ?? ""
-            ),
+            text: String(block.text ?? ""),
           };
         }
 
@@ -106,18 +103,11 @@ function parseContent(
           image: block.url
             ? {
                 publicId: String(
-                  block.publicId ??
-                    block.url
+                  block.publicId ?? block.url
                 ),
-                url: String(
-                  block.url
-                ),
-                width: Number(
-                  block.width ?? 0
-                ),
-                height: Number(
-                  block.height ?? 0
-                ),
+                url: String(block.url),
+                width: Number(block.width ?? 0),
+                height: Number(block.height ?? 0),
               }
             : null,
         };
@@ -157,13 +147,7 @@ export default function BlogEditForm({
      EXISTING CONTENT
   =================================================== */
 
-  const initialBlocks =
-    parseContent(blog.content);
-
-  /*
-   * Match existing inline content images
-   * with their BlogImage database records.
-   */
+  const initialBlocks = parseContent(blog.content);
 
   const initialBlocksWithImages =
     initialBlocks.map((block) => {
@@ -178,8 +162,7 @@ export default function BlogEditForm({
         blog.images.find(
           (image) =>
             !image.isPrimary &&
-            image.url ===
-              block.image?.url
+            image.url === block.image?.url
         );
 
       if (!existingImage) {
@@ -189,17 +172,10 @@ export default function BlogEditForm({
       return {
         type: "image" as const,
         image: {
-          publicId:
-            existingImage.publicId,
-
-          url:
-            existingImage.url ?? "",
-
-          width:
-            existingImage.width ?? 0,
-
-          height:
-            existingImage.height ?? 0,
+          publicId: existingImage.publicId,
+          url: existingImage.url ?? "",
+          width: existingImage.width ?? 0,
+          height: existingImage.height ?? 0,
         },
       };
     });
@@ -208,16 +184,13 @@ export default function BlogEditForm({
      STATE
   =================================================== */
 
-  const [title, setTitle] =
-    useState(blog.title);
+  const [title, setTitle] = useState(blog.title);
 
-  const [slug, setSlug] =
-    useState(blog.slug);
+  const [slug, setSlug] = useState(blog.slug);
 
-  const [excerpt, setExcerpt] =
-    useState(
-      blog.excerpt ?? ""
-    );
+  const [excerpt, setExcerpt] = useState(
+    blog.excerpt ?? ""
+  );
 
   const [blocks, setBlocks] =
     useState<ContentBlock[]>(
@@ -237,17 +210,12 @@ export default function BlogEditForm({
         ? {
             publicId:
               existingPrimaryImage.publicId,
-
             url:
               existingPrimaryImage.url,
-
             width:
-              existingPrimaryImage.width ??
-              0,
-
+              existingPrimaryImage.width ?? 0,
             height:
-              existingPrimaryImage.height ??
-              0,
+              existingPrimaryImage.height ?? 0,
           }
         : null
     );
@@ -268,23 +236,79 @@ export default function BlogEditForm({
     useState("");
 
   /* ===================================================
-     FIELDS
+     FIELD HIERARCHY
+  =================================================== */
+
+  const parentFields = fields.filter(
+    (field) => !field.parentId
+  );
+
+  const childFieldsByParent =
+    new Map<string, Field[]>();
+
+  for (const field of fields) {
+    if (!field.parentId) {
+      continue;
+    }
+
+    const children =
+      childFieldsByParent.get(
+        field.parentId
+      ) ?? [];
+
+    children.push(field);
+
+    childFieldsByParent.set(
+      field.parentId,
+      children
+    );
+  }
+
+  /*
+   * Only parents with children are
+   * displayed as category panels.
+   */
+
+  const categoryFields =
+    parentFields.filter((field) =>
+      childFieldsByParent.has(field.id)
+    );
+
+  /*
+   * Legacy standalone fields such as
+   * Hacking, Malware, Privacy, etc.
+   */
+
+  const standaloneFields =
+    parentFields.filter(
+      (field) =>
+        !childFieldsByParent.has(field.id)
+    );
+
+  /* ===================================================
+     FIELD HELPERS
   =================================================== */
 
   function toggleField(
     fieldId: string
   ) {
-    setSelectedFields(
-      (current) =>
-        current.includes(fieldId)
-          ? current.filter(
-              (id) =>
-                id !== fieldId
-            )
-          : [
-              ...current,
-              fieldId,
-            ]
+    setSelectedFields((current) =>
+      current.includes(fieldId)
+        ? current.filter(
+            (id) => id !== fieldId
+          )
+        : [
+            ...current,
+            fieldId,
+          ]
+    );
+  }
+
+  function isFieldSelected(
+    fieldId: string
+  ) {
+    return selectedFields.includes(
+      fieldId
     );
   }
 
@@ -485,7 +509,7 @@ export default function BlogEditForm({
       });
 
     /* -----------------------------------------------
-       Serialize article content
+       Serialize content
     ------------------------------------------------ */
 
     const contentBlocks =
@@ -611,7 +635,9 @@ export default function BlogEditForm({
                 ),
 
               access,
+
               status,
+
               featured,
 
               fieldIds:
@@ -628,6 +654,7 @@ export default function BlogEditForm({
       if (!response.ok) {
         setMessage(
           data.message ||
+            data.error ||
             "Unable to update blog."
         );
 
@@ -758,11 +785,6 @@ export default function BlogEditForm({
 
         <div className="space-y-4">
           <ImageUploader
-            /*
-             * ImageUploader expects a URL string.
-             * We keep the complete UploadedImage
-             * object in our state.
-             */
             value={
               primaryImage?.url ??
               undefined
@@ -783,9 +805,7 @@ export default function BlogEditForm({
             <button
               type="button"
               onClick={() =>
-                setPrimaryImage(
-                  null
-                )
+                setPrimaryImage(null)
               }
               className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
             >
@@ -842,9 +862,7 @@ export default function BlogEditForm({
                 key={index}
                 className="rounded-xl border border-slate-700 bg-slate-950 p-4"
               >
-                {/* -----------------------------------------
-                    Block Header
-                ------------------------------------------ */}
+                {/* Block Header */}
 
                 <div className="mb-4 flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wider text-cyan-400">
@@ -859,8 +877,6 @@ export default function BlogEditForm({
                   </span>
 
                   <div className="flex gap-2">
-                    {/* Move Up */}
-
                     <button
                       type="button"
                       disabled={
@@ -876,8 +892,6 @@ export default function BlogEditForm({
                     >
                       ↑
                     </button>
-
-                    {/* Move Down */}
 
                     <button
                       type="button"
@@ -897,8 +911,6 @@ export default function BlogEditForm({
                       ↓
                     </button>
 
-                    {/* Remove Block */}
-
                     <button
                       type="button"
                       onClick={() =>
@@ -913,9 +925,7 @@ export default function BlogEditForm({
                   </div>
                 </div>
 
-                {/* -----------------------------------------
-                    Text Block
-                ------------------------------------------ */}
+                {/* Text Block */}
 
                 {block.type ===
                   "text" && (
@@ -938,20 +948,15 @@ export default function BlogEditForm({
                   />
                 )}
 
-                {/* -----------------------------------------
-                    Image Block
-                ------------------------------------------ */}
+                {/* Image Block */}
 
                 {block.type ===
                   "image" && (
                   <div className="space-y-4">
                     <ImageUploader
-                      /*
-                       * ImageUploader expects
-                       * string | undefined.
-                       */
                       value={
-                        block.image?.url ??
+                        block.image
+                          ?.url ??
                         undefined
                       }
                       onUpload={(
@@ -1010,41 +1015,224 @@ export default function BlogEditForm({
       ================================================= */}
 
       <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 className="mb-4 text-xl font-semibold text-white">
-          Cybersecurity Fields
-        </h2>
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-white">
+            Cybersecurity Fields
+          </h2>
 
-        <div className="flex flex-wrap gap-3">
-          {fields.map(
-            (field) => {
-              const selected =
-                selectedFields.includes(
-                  field.id
-                );
+          <p className="mt-1 text-sm text-slate-400">
+            Select the cybersecurity domains
+            this article belongs to.
+          </p>
+        </div>
+
+        {/* =================================================
+            CATEGORY PANELS
+        ================================================= */}
+
+        <div className="space-y-5">
+          {categoryFields.map(
+            (category) => {
+              const children =
+                childFieldsByParent.get(
+                  category.id
+                ) ?? [];
 
               return (
-                <button
-                  key={field.id}
-                  type="button"
-                  onClick={() =>
-                    toggleField(
-                      field.id
-                    )
-                  }
-                  className={`rounded-lg border px-4 py-2 text-sm transition ${
-                    selected
-                      ? "border-cyan-400 bg-cyan-400/10 text-cyan-300"
-                      : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white"
-                  }`}
+                <div
+                  key={category.id}
+                  className="overflow-hidden rounded-2xl border border-slate-800 bg-[#030817]"
                 >
-                  {field.number
-                    ? `${field.number}. `
-                    : ""}
-                  {field.name}
-                </button>
+                  {/* =================================================
+                      CATEGORY HEADER
+                  ================================================= */}
+
+                  <div className="flex items-center gap-4 px-6 py-5">
+                    {/* Category Number */}
+
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-400/30 bg-cyan-400/10 font-mono text-sm font-bold text-cyan-400">
+                      {category.number ??
+                        String(
+                          categoryFields.indexOf(
+                            category
+                          ) + 1
+                        ).padStart(
+                          2,
+                          "0"
+                        )}
+                    </div>
+
+                    {/* Category Name */}
+
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold tracking-tight text-white">
+                        {category.name}
+                      </h3>
+
+                      <p className="mt-0.5 text-sm text-slate-500">
+                        {children.length}{" "}
+                        {children.length ===
+                        1
+                          ? "topic"
+                          : "topics"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* =================================================
+                      TOPIC GRID
+                  ================================================= */}
+
+                  <div className="grid gap-2.5 px-6 pb-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {children.map(
+                      (field) => {
+                        const selected =
+                          isFieldSelected(
+                            field.id
+                          );
+
+                        return (
+                          <button
+                            key={
+                              field.id
+                            }
+                            type="button"
+                            onClick={() =>
+                              toggleField(
+                                field.id
+                              )
+                            }
+                            aria-pressed={
+                              selected
+                            }
+                            className={`group flex min-h-[56px] items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all duration-200 ${
+                              selected
+                                ? "border-cyan-400 bg-cyan-400/10 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.06)]"
+                                : "border-slate-700 bg-[#10192d] text-slate-300 hover:border-slate-500 hover:bg-[#142038] hover:text-white"
+                            }`}
+                          >
+                            {/* Checkbox */}
+
+                            <span
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${
+                                selected
+                                  ? "border-cyan-400 bg-cyan-400 text-[11px] font-bold text-slate-950"
+                                  : "border-slate-600 text-transparent group-hover:border-slate-400"
+                              }`}
+                            >
+                              ✓
+                            </span>
+
+                            {/* Topic Name */}
+
+                            <span
+                              className={`min-w-0 text-sm font-medium ${
+                                selected
+                                  ? "text-cyan-300"
+                                  : "text-slate-300 group-hover:text-white"
+                              }`}
+                            >
+                              {
+                                field.name
+                              }
+                            </span>
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
               );
             }
           )}
+
+          {/* =================================================
+              STANDALONE / LEGACY FIELDS
+          ================================================= */}
+
+          {standaloneFields.length >
+            0 && (
+            <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[#030817]">
+              <div className="flex items-center gap-4 px-6 py-5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-400/30 bg-cyan-400/10 font-mono text-sm font-bold text-cyan-400">
+                  --
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Other Fields
+                  </h3>
+
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    {standaloneFields.length}{" "}
+                    {standaloneFields.length ===
+                    1
+                      ? "field"
+                      : "fields"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-2.5 px-6 pb-6 sm:grid-cols-2 lg:grid-cols-3">
+                {standaloneFields.map(
+                  (field) => {
+                    const selected =
+                      isFieldSelected(
+                        field.id
+                      );
+
+                    return (
+                      <button
+                        key={field.id}
+                        type="button"
+                        onClick={() =>
+                          toggleField(
+                            field.id
+                          )
+                        }
+                        aria-pressed={
+                          selected
+                        }
+                        className={`group flex min-h-[56px] items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all duration-200 ${
+                          selected
+                            ? "border-cyan-400 bg-cyan-400/10 text-cyan-300"
+                            : "border-slate-700 bg-[#10192d] text-slate-300 hover:border-slate-500 hover:bg-[#142038] hover:text-white"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                            selected
+                              ? "border-cyan-400 bg-cyan-400 text-[11px] font-bold text-slate-950"
+                              : "border-slate-600 text-transparent group-hover:border-slate-400"
+                          }`}
+                        >
+                          ✓
+                        </span>
+
+                        <span className="min-w-0 text-sm font-medium">
+                          {field.name}
+                        </span>
+                      </button>
+                    );
+                  }
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* =================================================
+            SELECTED COUNT
+        ================================================= */}
+
+        <div className="mt-5 flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-4 py-3">
+          <span className="text-xs uppercase tracking-wider text-slate-500">
+            Selected fields
+          </span>
+
+          <span className="font-mono text-xs font-semibold text-cyan-400">
+            {selectedFields.length}
+          </span>
         </div>
       </section>
 
@@ -1130,8 +1318,7 @@ export default function BlogEditForm({
             checked={featured}
             onChange={(event) =>
               setFeatured(
-                event.target
-                  .checked
+                event.target.checked
               )
             }
             className="h-4 w-4 accent-cyan-400"

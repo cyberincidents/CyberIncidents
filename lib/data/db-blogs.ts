@@ -9,6 +9,14 @@ import type {
    PUBLIC BLOG QUERIES
 ===================================================== */
 
+/**
+ * Get published blogs belonging to one exact field.
+ *
+ * Example:
+ * getBlogsByField("network-security")
+ *
+ * Returns only blogs directly assigned to Network Security.
+ */
 export async function getBlogsByField(
   slug: string
 ) {
@@ -52,15 +60,147 @@ export async function getBlogsByField(
 }
 
 /* =====================================================
+   BLOGS BY PARENT CATEGORY
+===================================================== */
+
+/**
+ * Get all published blogs belonging to any
+ * subcategory of a parent category.
+ *
+ * Example:
+ *
+ * getBlogsByParentField("security-defense")
+ *
+ * Finds:
+ *
+ * Security & Defense
+ * ├── SOC & Security Operations
+ * ├── SIEM
+ * ├── EDR & XDR
+ * ├── Network Security
+ * ├── Cloud Security
+ * ├── Application Security
+ * ├── Identity & Access Security
+ * ├── Email Security
+ * ├── Endpoint Security
+ * ├── Detection Engineering
+ * └── Security Monitoring
+ *
+ * Then returns blogs assigned to any of
+ * those subcategories.
+ */
+export async function getBlogsByParentField(
+  slug: string
+) {
+  /* -----------------------------------------------
+     Find the parent category
+  ------------------------------------------------ */
+
+  const parent = await prisma.field.findUnique({
+    where: {
+      slug,
+    },
+
+    select: {
+      id: true,
+
+      children: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!parent) {
+    return [];
+  }
+
+  /* -----------------------------------------------
+     Collect child field IDs
+  ------------------------------------------------ */
+
+  const childFieldIds =
+    parent.children.map(
+      (child) => child.id
+    );
+
+  /*
+   * If the category currently has no children,
+   * there are no descendant blogs to return.
+   */
+
+  if (childFieldIds.length === 0) {
+    return [];
+  }
+
+  /* -----------------------------------------------
+     Find blogs assigned to ANY child field
+  ------------------------------------------------ */
+
+  return prisma.blog.findMany({
+    where: {
+      status: "PUBLISHED",
+
+      fields: {
+        some: {
+          fieldId: {
+            in: childFieldIds,
+          },
+        },
+      },
+    },
+
+    include: {
+      fields: {
+        include: {
+          field: true,
+        },
+      },
+
+      tags: {
+        include: {
+          tag: true,
+        },
+      },
+
+      images: {
+        orderBy: {
+          sortOrder: "asc",
+        },
+      },
+    },
+
+    orderBy: {
+      publishedAt: "desc",
+    },
+  });
+}
+
+/* =====================================================
    FIELD
 ===================================================== */
 
+/**
+ * Get a field together with its parent.
+ *
+ * This is important for the catch-all route:
+ *
+ * /field/security-defense/network-security
+ *
+ * The page needs to know that Network Security
+ * belongs to Security & Defense.
+ */
 export async function getFieldBySlug(
   slug: string
 ) {
   return prisma.field.findUnique({
     where: {
       slug,
+    },
+
+    include: {
+      parent: true,
     },
   });
 }
