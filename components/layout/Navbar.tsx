@@ -154,7 +154,7 @@ export default function Navbar() {
             NAV ROW
         ======================================================= */}
 
-        <div className="relative z-[100] border-t border-white/5">
+        <div className="relative z-[100] ">
           <div className="mx-auto flex max-w-7xl items-center justify-center gap-x-8 gap-y-2 px-5 pt-1 pb-2 sm:px-8 sm:pt-1 sm:pb-2.5 lg:flex-wrap lg:px-10">
             {/* =================================================
                 DESKTOP NAV
