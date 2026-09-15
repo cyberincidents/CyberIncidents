@@ -125,6 +125,21 @@ function parseContent(content: string): ContentBlock[] {
 }
 
 /* =====================================================
+   SLUG HELPERS
+===================================================== */
+
+function generateSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/* =====================================================
    COMPONENT
 ===================================================== */
 
@@ -230,6 +245,18 @@ export default function BlogEditForm({
   const [slug, setSlug] = useState(
     formBlog.slug
   );
+
+  /*
+   * CREATE:
+   * Slug is generated automatically while typing the title.
+   *
+   * EDIT:
+   * Keep the existing slug unchanged when the title changes.
+   * Once the slug is manually cleared, changing the title will
+   * generate a new slug again.
+   */
+  const [slugManuallyEdited, setSlugManuallyEdited] =
+    useState(isEditMode && Boolean(formBlog.slug.trim()));
 
   const [excerpt, setExcerpt] = useState(
     formBlog.excerpt ?? ""
@@ -684,11 +711,25 @@ export default function BlogEditForm({
 
             <input
               value={title}
-              onChange={(event) =>
-                setTitle(
-                  event.target.value
-                )
-              }
+              onChange={(event) => {
+                const nextTitle = event.target.value;
+
+                setTitle(nextTitle);
+
+                /*
+                 * Automatically generate the slug while the slug
+                 * is still controlled by the title.
+                 *
+                 * In edit mode, the existing slug is preserved
+                 * until the admin clears it manually.
+                 */
+                if (
+                  !slugManuallyEdited ||
+                  !slug.trim()
+                ) {
+                  setSlug(generateSlug(nextTitle));
+                }
+              }}
               className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
               placeholder="Blog title"
             />
@@ -703,14 +744,31 @@ export default function BlogEditForm({
 
             <input
               value={slug}
-              onChange={(event) =>
-                setSlug(
+              onChange={(event) => {
+                const nextSlug = generateSlug(
                   event.target.value
-                )
-              }
+                );
+
+                setSlug(nextSlug);
+
+                /*
+                 * Once the admin changes the slug manually,
+                 * title changes must no longer overwrite it.
+                 *
+                 * If the admin clears the slug completely,
+                 * the title is allowed to generate a new one.
+                 */
+                setSlugManuallyEdited(
+                  nextSlug.trim().length > 0
+                );
+              }}
               className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
               placeholder="blog-slug"
             />
+
+            <p className="mt-2 text-xs text-slate-500">
+              Auto-generated from the title. You can edit it manually.
+            </p>
           </div>
 
           {/* Excerpt */}
