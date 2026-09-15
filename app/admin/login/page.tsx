@@ -96,7 +96,7 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
+              className="w-full rounded-lg bg-[#00a8ff] px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#0088cc] active:scale-[0.99]"
             >
               Sign In
             </button>

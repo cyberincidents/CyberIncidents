@@ -2,8 +2,8 @@ export type CyberField = {
   id: string;
   name: string;
   slug: string;
-  description: string;
-  number: string;
+  description: string | null;
+  number: string | null;
 };
 
 export const fields: CyberField[] = [

@@ -54,7 +54,7 @@ function renderText(text: string) {
       return (
         <h2
           key={index}
-          className="mt-10 mb-4 text-2xl font-bold tracking-tight text-gray-900"
+          className="mt-10 mb-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
         >
           {trimmed.replace(/^##\s+/, "")}
         </h2>
@@ -65,7 +65,7 @@ function renderText(text: string) {
       return (
         <h3
           key={index}
-          className="mt-8 mb-3 text-xl font-semibold text-gray-900"
+          className="mt-8 mb-3 text-xl font-semibold text-gray-900 dark:text-white"
         >
           {trimmed.replace(/^###\s+/, "")}
         </h3>
@@ -75,7 +75,7 @@ function renderText(text: string) {
     return (
       <p
         key={index}
-        className="mb-5 text-[17px] leading-8 text-gray-700"
+        className="mb-5 text-[17px] leading-8 text-gray-700 dark:text-white/80"
       >
         {trimmed}
       </p>
@@ -94,15 +94,9 @@ export default function ArticleContent({
     parsedContent = null;
   }
 
-  // --------------------------------------------------
-  // New structured article
-  // --------------------------------------------------
-
   if (isContentBlockArray(parsedContent)) {
     return (
       <div className="relative">
-        {/* ZeroTrace watermark */}
-
         <div
           className="pointer-events-none absolute inset-0 z-0 flex justify-center"
           aria-hidden="true"
@@ -110,11 +104,9 @@ export default function ArticleContent({
           <img
             src="/branding/zerotrace-watermark.png"
             alt=""
-            className="sticky top-32 h-fit w-[280px] opacity-[0.035]"
+            className="sticky top-32 h-fit w-[280px] opacity-[0.035] dark:opacity-[0.08]"
           />
         </div>
-
-        {/* Article content */}
 
         <div className="relative z-10">
           {parsedContent.map((block, index) => {
@@ -129,7 +121,7 @@ export default function ArticleContent({
             return (
               <figure
                 key={index}
-                className="my-10 overflow-hidden rounded-xl"
+                className="my-10 overflow-hidden rounded-xl border border-gray-200 dark:border-white/10"
               >
                 <img
                   src={block.url}
@@ -145,14 +137,8 @@ export default function ArticleContent({
     );
   }
 
-  // --------------------------------------------------
-  // Legacy article content
-  // --------------------------------------------------
-
   return (
     <div className="relative">
-      {/* ZeroTrace watermark */}
-
       <div
         className="pointer-events-none absolute inset-0 z-0 flex justify-center"
         aria-hidden="true"
@@ -160,7 +146,7 @@ export default function ArticleContent({
         <img
           src="/branding/zerotrace-watermark.png"
           alt=""
-          className="sticky top-32 h-fit w-[280px] opacity-[0.035]"
+          className="sticky top-32 h-fit w-[280px] opacity-[0.035] dark:opacity-[0.08]"
         />
       </div>
 

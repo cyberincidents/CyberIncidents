@@ -8,14 +8,14 @@ import NotificationSignup from "@/components/notifications/NotificationSignup";
 export default function Footer() {
   return (
     <footer className="bg-[#050607] text-white">
-      {/* Top cyan accent */}
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-[#00d9ff] to-transparent opacity-60" />
+      {/* Top accent */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-[#0C7FC9] to-transparent opacity-60" />
 
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
         {/* Main footer */}
-        <div className="grid gap-12 py-14 md:grid-cols-2 lg:grid-cols-4 lg:py-16">
+        <div className="grid gap-6 py-14 md:grid-cols-2 lg:grid-cols-4 lg:py-16">
           {/* Brand */}
-          <div className="lg:col-span-2">
+          <div className="md:col-span-2 lg:col-span-1">
             <Link
               href="/"
               className="inline-block"
@@ -37,19 +37,18 @@ export default function Footer() {
             </p>
 
             <div className="mt-6 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#00d9ff]" />
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#0C7FC9]" />
 
-              <span className="text-xs font-medium uppercase tracking-[0.2em] text-white/35">
-                Threats Today. A Safer Tomorrow.
+              <span className="text-xs font-medium text-white/40">
+                Threats today. A safer tomorrow.
               </span>
             </div>
-            <NotificationSignup />
           </div>
 
           {/* Fields */}
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#00d9ff]">
-              Explore Fields
+            <h2 className="text-sm font-semibold text-white">
+              Explore fields
             </h2>
 
             <ul className="mt-5 space-y-3">
@@ -59,7 +58,7 @@ export default function Footer() {
                     href={`/field/${field.slug}`}
                     className="group flex items-center gap-2 text-sm text-white/50 transition-colors hover:text-white"
                   >
-                    <span className="h-px w-0 bg-[#00d9ff] transition-all duration-200 group-hover:w-3" />
+                    <span className="h-px w-0 bg-[#0C7FC9] transition-all duration-200 group-hover:w-3" />
 
                     {field.name}
                   </Link>
@@ -70,7 +69,7 @@ export default function Footer() {
 
           {/* Website */}
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#00d9ff]">
+            <h2 className="text-sm font-semibold text-white">
               CyberIncidents
             </h2>
 
@@ -121,6 +120,21 @@ export default function Footer() {
               </li>
             </ul>
           </div>
+
+          {/* Stay updated */}
+          <div>
+            <h2 className="text-sm font-semibold text-white">
+              Stay updated
+            </h2>
+
+            <p className="mt-5 text-sm leading-6 text-white/50">
+              Get new incidents and analysis in your inbox.
+            </p>
+
+            <div className="mt-4">
+              <NotificationSignup />
+            </div>
+          </div>
         </div>
 
         {/* Divider */}
@@ -139,7 +153,7 @@ export default function Footer() {
 
             <span className="hidden h-3 w-px bg-white/10 sm:block" />
 
-            <span className="text-[#00a8ff]/60">ZERO TRACE</span>
+            <span className="font-medium text-[#0C7FC9]/70">Zero trace</span>
           </div>
         </div>
       </div>

@@ -77,7 +77,7 @@ export default function ShareButtons({
       type="button"
       onClick={handleShare}
       disabled={sharing}
-      className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 transition hover:border-gray-900 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-[#00a8ff]/40 bg-white dark:bg-[#00a8ff]/10 px-5 py-2.5 text-sm font-semibold text-gray-900 dark:text-[#00d9ff] transition hover:border-gray-900 dark:hover:border-[#00d9ff] hover:bg-gray-50 dark:hover:bg-[#00a8ff]/20 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {/* Share icon */}
       <svg
@@ -102,7 +102,7 @@ export default function ShareButtons({
         ? "Sharing..."
         : copied
           ? "Link Copied!"
-          : "Share"}
+          : "Share Article"}
     </button>
   );
 }

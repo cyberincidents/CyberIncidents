@@ -8,11 +8,11 @@ type BlogCardProps = {
 
 export default function BlogCard({ blog }: BlogCardProps) {
   return (
-    <article className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#00a8ff]/40 hover:shadow-xl hover:shadow-[#00a8ff]/[0.08]">
+    <article className="group overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#090d14] shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#00a8ff]/40 hover:shadow-xl hover:shadow-[#00a8ff]/[0.1]">
       {/* Image */}
       <Link
         href={`/blog/${blog.slug}`}
-        className="relative block aspect-[16/9] overflow-hidden bg-gray-100"
+        className="relative block aspect-[16/9] overflow-hidden bg-gray-100 dark:bg-white/5"
       >
         <Image
           src={blog.image}
@@ -21,36 +21,36 @@ export default function BlogCard({ blog }: BlogCardProps) {
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-        <span className="absolute left-4 top-4 rounded-full bg-black/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#00d9ff] backdrop-blur-sm">
+        <span className="absolute left-4 top-4 rounded-full bg-black/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#00d9ff] backdrop-blur-sm border border-[#00a8ff]/30">
           {blog.field}
         </span>
       </Link>
 
       {/* Content */}
       <div className="p-6">
-        <div className="flex items-center gap-2 text-xs text-gray-400">
+        <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-white/40">
           <span>{blog.publishedAt}</span>
 
-          <span className="h-1 w-1 rounded-full bg-gray-300" />
+          <span className="h-1 w-1 rounded-full bg-gray-300 dark:bg-white/20" />
 
           <span>{blog.readTime}</span>
         </div>
 
         <Link href={`/blog/${blog.slug}`}>
-          <h2 className="mt-3 text-xl font-bold leading-tight tracking-tight text-gray-900 transition-colors group-hover:text-[#008fd6]">
+          <h2 className="mt-3 text-xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white transition-colors group-hover:text-[#00d9ff]">
             {blog.title}
           </h2>
         </Link>
 
-        <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-500">
+        <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-500 dark:text-white/50">
           {blog.excerpt}
         </p>
 
         <Link
           href={`/blog/${blog.slug}`}
-          className="mt-5 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#008fd6]"
+          className="mt-5 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#00a8ff]"
         >
           Read More
 

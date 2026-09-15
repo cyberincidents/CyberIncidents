@@ -13,9 +13,7 @@ type BlogFiltersProps = {
   fields: Field[];
 };
 
-export default function BlogFilters({
-  fields,
-}: BlogFiltersProps) {
+export default function BlogFilters({ fields }: BlogFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -26,7 +24,6 @@ export default function BlogFilters({
   const currentFeatured = searchParams.get("featured") ?? "";
 
   const [isOpen, setIsOpen] = useState(false);
-
   const [field, setField] = useState(currentField);
   const [status, setStatus] = useState(currentStatus);
   const [access, setAccess] = useState(currentAccess);
@@ -34,49 +31,19 @@ export default function BlogFilters({
 
   const [isPending, startTransition] = useTransition();
 
-  const activeFilterCount = [
-    currentField,
-    currentStatus,
-    currentAccess,
-    currentFeatured,
-  ].filter(Boolean).length;
+  const activeFilterCount = [currentField, currentStatus, currentAccess, currentFeatured].filter(Boolean).length;
 
   function applyFilters() {
     const params = new URLSearchParams(searchParams.toString());
-
-    if (field) {
-      params.set("field", field);
-    } else {
-      params.delete("field");
-    }
-
-    if (status) {
-      params.set("status", status);
-    } else {
-      params.delete("status");
-    }
-
-    if (access) {
-      params.set("access", access);
-    } else {
-      params.delete("access");
-    }
-
-    if (featured) {
-      params.set("featured", featured);
-    } else {
-      params.delete("featured");
-    }
-
+    if (field) params.set("field", field); else params.delete("field");
+    if (status) params.set("status", status); else params.delete("status");
+    if (access) params.set("access", access); else params.delete("access");
+    if (featured) params.set("featured", featured); else params.delete("featured");
     params.delete("page");
 
     startTransition(() => {
       const query = params.toString();
-
-      router.replace(
-        query ? `${pathname}?${query}` : pathname,
-        { scroll: false }
-      );
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     });
   }
 
@@ -87,7 +54,6 @@ export default function BlogFilters({
     setFeatured("");
 
     const params = new URLSearchParams(searchParams.toString());
-
     params.delete("field");
     params.delete("status");
     params.delete("access");
@@ -96,237 +62,123 @@ export default function BlogFilters({
 
     startTransition(() => {
       const query = params.toString();
-
-      router.replace(
-        query ? `${pathname}?${query}` : pathname,
-        { scroll: false }
-      );
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     });
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-      {/* =================================================
-          FILTER HEADER / DROPDOWN BUTTON
-      ================================================= */}
-
+    <section className="overflow-hidden rounded-xl border border-white/10 bg-[#111113] shadow-sm">
       <button
         type="button"
-        onClick={() => setIsOpen((previous) => !previous)}
-        className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-slate-800/50"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left transition hover:bg-white/[0.02]"
         aria-expanded={isOpen}
       >
         <div className="flex items-center gap-3">
-          {/* Arrow */}
           <svg
-            className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`h-4 w-4 text-zinc-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
             viewBox="0 0 20 20"
             fill="currentColor"
-            aria-hidden="true"
           >
-            <path
-              fillRule="evenodd"
-              d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z"
-              clipRule="evenodd"
-            />
+            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z" clipRule="evenodd" />
           </svg>
-
           <div>
-            <h2 className="text-sm font-semibold text-white">
-              Filters
-            </h2>
-
-            <p className="mt-0.5 text-xs text-slate-500">
-              Narrow down your blog results
-            </p>
+            <h2 className="text-sm font-semibold text-zinc-100">Filters</h2>
+            <p className="mt-0.5 text-xs text-zinc-400">Narrow down your results</p>
           </div>
         </div>
-
         <div className="flex items-center gap-3">
           {activeFilterCount > 0 && (
-            <span className="rounded-full bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-400">
-              {activeFilterCount}{" "}
-              {activeFilterCount === 1
-                ? "filter"
-                : "filters"}
+            <span className="rounded-full bg-[var(--cyber-blue)]/10 border border-[var(--cyber-blue)]/20 px-2.5 py-1 text-xs font-medium text-[var(--cyber-blue)]">
+              {activeFilterCount} {activeFilterCount === 1 ? "active" : "active"}
             </span>
           )}
-
-          <span className="text-xs text-slate-500">
-            {isOpen ? "Hide" : "Show"}
-          </span>
+          <span className="text-xs font-medium text-zinc-500">{isOpen ? "Hide" : "Show"}</span>
         </div>
       </button>
 
-      {/* =================================================
-          FILTER CONTENT
-      ================================================= */}
-
       {isOpen && (
-        <div className="border-t border-slate-800 px-5 py-5">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="border-t border-white/10 bg-[#0a0a0c]/50 px-6 py-5">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {/* Field */}
-
             <div>
-              <label
-                htmlFor="field"
-                className="mb-2 block text-sm font-medium text-slate-300"
-              >
-                Field
-              </label>
-
+              <label htmlFor="field" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Field</label>
               <select
                 id="field"
                 value={field}
-                onChange={(event) =>
-                  setField(event.target.value)
-                }
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+                onChange={(e) => setField(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">
-                  All Fields
-                </option>
-
+                <option value="">All Fields</option>
                 {fields.map((item) => (
-                  <option
-                    key={item.id}
-                    value={item.id}
-                  >
-                    {item.number
-                      ? `${item.number}. `
-                      : ""}
-                    {item.name}
+                  <option key={item.id} value={item.id}>
+                    {item.number ? `${item.number}. ` : ""}{item.name}
                   </option>
                 ))}
               </select>
             </div>
 
             {/* Status */}
-
             <div>
-              <label
-                htmlFor="status"
-                className="mb-2 block text-sm font-medium text-slate-300"
-              >
-                Status
-              </label>
-
+              <label htmlFor="status" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Status</label>
               <select
                 id="status"
                 value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value)
-                }
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">
-                  All Statuses
-                </option>
-
-                <option value="DRAFT">
-                  Draft
-                </option>
-
-                <option value="PUBLISHED">
-                  Published
-                </option>
-
-                <option value="ARCHIVED">
-                  Archived
-                </option>
+                <option value="">All Statuses</option>
+                <option value="DRAFT">Draft</option>
+                <option value="PUBLISHED">Published</option>
+                <option value="ARCHIVED">Archived</option>
               </select>
             </div>
 
             {/* Access */}
-
             <div>
-              <label
-                htmlFor="access"
-                className="mb-2 block text-sm font-medium text-slate-300"
-              >
-                Access
-              </label>
-
+              <label htmlFor="access" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Access</label>
               <select
                 id="access"
                 value={access}
-                onChange={(event) =>
-                  setAccess(event.target.value)
-                }
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+                onChange={(e) => setAccess(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">
-                  All Access
-                </option>
-
-                <option value="FREE">
-                  Free
-                </option>
-
-                <option value="PAID">
-                  Paid
-                </option>
+                <option value="">All Access</option>
+                <option value="FREE">Free</option>
+                <option value="PAID">Paid</option>
               </select>
             </div>
 
             {/* Featured */}
-
             <div>
-              <label
-                htmlFor="featured"
-                className="mb-2 block text-sm font-medium text-slate-300"
-              >
-                Featured
-              </label>
-
+              <label htmlFor="featured" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Featured</label>
               <select
                 id="featured"
                 value={featured}
-                onChange={(event) =>
-                  setFeatured(event.target.value)
-                }
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+                onChange={(e) => setFeatured(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">
-                  All Blogs
-                </option>
-
-                <option value="true">
-                  Featured
-                </option>
-
-                <option value="false">
-                  Not Featured
-                </option>
+                <option value="">All Blogs</option>
+                <option value="true">Featured</option>
+                <option value="false">Not Featured</option>
               </select>
             </div>
           </div>
 
-          {/* =================================================
-              ACTIONS
-          ================================================= */}
-
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={applyFilters}
               disabled={isPending}
-              className="rounded-lg bg-cyan-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-gradient-to-r from-[var(--cyber-blue)] to-[var(--cyber-cyan)] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending
-                ? "Applying..."
-                : "Apply Filters"}
+              {isPending ? "Applying..." : "Apply Filters"}
             </button>
-
             <button
               type="button"
               onClick={clearFilters}
-              disabled={
-                isPending || activeFilterCount === 0
-              }
-              className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={isPending || activeFilterCount === 0}
+              className="rounded-lg border border-white/10 px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Clear Filters
             </button>

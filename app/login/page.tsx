@@ -16,7 +16,7 @@ export default async function LoginPage({ searchParams }: Props) {
     <main className="min-h-screen bg-white px-6 py-16">
       <div className="mx-auto flex max-w-md flex-col justify-center">
         <div className="text-center">
-          <a href="/" className="inline-block">
+          <a href="" className="inline-block">
             <img
               src="/brand/cyberincidents-logo.png"
               alt="CyberIncidents"

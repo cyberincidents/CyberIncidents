@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import ArticleContent from "@/components/blog/ArticleContent";
 import BlogViewTracker from "@/components/blog/BlogViewTracker";
-import BlogCard from "@/components/blog/BlogCard";
 import LatestBlogs from "@/components/blog/LatestBlogs";
 import RelatedArticles from "@/components/blog/RelatedArticles";
 import ShareButtons from "@/components/blog/ShareButtons";
@@ -41,102 +40,11 @@ function getPrimaryImage(blog: {
     sortOrder: number;
   }[];
 }) {
-  return (
-    blog.images.find(
-      (image) => image.isPrimary
-    ) ?? blog.images[0]
-  );
+  return blog.images.find((image) => image.isPrimary) ?? blog.images[0];
 }
 
-function toBlogCardData(
-  blog: {
-    id: string;
-    title: string;
-    slug: string;
-    excerpt: string | null;
-    content: string;
-    author: string;
-    publishedAt: Date | null;
-    readTime: number | null;
-    featured: boolean;
-
-    fields: {
-      field: {
-        name: string;
-        slug: string;
-      };
-    }[];
-
-    tags: {
-      tag: {
-        name: string;
-      };
-    }[];
-
-    images: {
-      url: string | null;
-      altText: string | null;
-      isPrimary: boolean;
-      sortOrder: number;
-    }[];
-  }
-) {
-  const primaryImage = getPrimaryImage(blog);
-  const field = blog.fields[0]?.field;
-
-  return {
-    id: blog.id,
-    title: blog.title,
-    slug: blog.slug,
-
-    field:
-      field?.name ?? "Cyber Security",
-
-    fieldSlug:
-      field?.slug ?? "",
-
-    excerpt:
-      blog.excerpt ?? "",
-
-    content:
-      blog.content,
-
-    image:
-      primaryImage?.url ??
-      "/images/blogs/placeholder.jpg",
-
-    gallery: primaryImage?.url
-      ? [primaryImage.url]
-      : [],
-
-    author:
-      blog.author,
-
-    publishedAt:
-      formatDate(blog.publishedAt),
-
-    readTime:
-      blog.readTime
-        ? `${blog.readTime} min read`
-        : "",
-
-    tags: blog.tags.map(
-      (item) => item.tag.name
-    ),
-
-    featured:
-      blog.featured,
-  };
-}
-
-export default async function BlogPage({
-  params,
-}: BlogPageProps) {
+export default async function BlogPage({ params }: BlogPageProps) {
   const { slug } = await params;
-
-  // --------------------------------------------------
-  // Get blog
-  // --------------------------------------------------
 
   const blog = await getBlogBySlug(slug);
 
@@ -144,67 +52,30 @@ export default async function BlogPage({
     notFound();
   }
 
-  const blogField =
-    blog.fields[0]?.field;
-
-  // --------------------------------------------------
-  // Related articles
-  // --------------------------------------------------
+  const blogField = blog.fields[0]?.field;
 
   const relatedBlogs = blogField
-    ? await getBlogsByField(
-        blogField.slug
-      )
+    ? await getBlogsByField(blogField.slug)
     : [];
 
-  const filteredRelatedBlogs =
-    relatedBlogs
-      .filter(
-        (item) => item.id !== blog.id
-      )
-      .slice(0, 3);
+  const filteredRelatedBlogs = relatedBlogs
+    .filter((item) => item.id !== blog.id)
+    .slice(0, 3);
 
-  // --------------------------------------------------
-  // Latest articles
-  // --------------------------------------------------
+  const latestBlogs = (await getLatestBlogs(4))
+    .filter((item) => item.id !== blog.id)
+    .slice(0, 3);
 
-  const latestBlogs =
-    (await getLatestBlogs(4))
-      .filter(
-        (item) => item.id !== blog.id
-      )
-      .slice(0, 3);
-
-  // --------------------------------------------------
-  // Primary image
-  // --------------------------------------------------
-
-  const primaryImage =
-    getPrimaryImage(blog);
+  const primaryImage = getPrimaryImage(blog);
 
   return (
-    <main className="min-h-screen bg-white">
-      {/* ==========================================================
-          VIEW TRACKING
-      ========================================================== */}
+    <main className="min-h-screen bg-white dark:bg-[#05070a] text-gray-900 dark:text-white transition-colors duration-300">
+      <BlogViewTracker blogId={blog.id} />
 
-      <BlogViewTracker
-        blogId={blog.id}
-      />
-
-      {/* ==========================================================
-          ARTICLE HEADER
-      ========================================================== */}
-
-      <section className="border-b border-gray-100">
-        <div className="mx-auto max-w-5xl px-5 pb-12 pt-12 sm:px-8 sm:pt-16 lg:px-10 lg:pb-16">
-          {/* Breadcrumb */}
-
-          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
-            <Link
-              href="/"
-              className="transition-colors hover:text-[#008fd6]"
-            >
+      <section className="border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#05070a]">
+        <div className="mx-auto max-w-3xl px-5 pb-14 pt-14 sm:px-8 sm:pt-20">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 dark:text-white/40">
+            <Link href="/" className="transition-colors hover:text-[#00a8ff]">
               Home
             </Link>
 
@@ -214,7 +85,7 @@ export default async function BlogPage({
               <>
                 <Link
                   href={`/field/${blogField.slug}`}
-                  className="transition-colors hover:text-[#008fd6]"
+                  className="transition-colors hover:text-[#00a8ff]"
                 >
                   {blogField.name}
                 </Link>
@@ -223,162 +94,94 @@ export default async function BlogPage({
               </>
             )}
 
-            <span className="text-gray-500">
-              Article
+            <span className="text-gray-500 dark:text-white/60">Article</span>
+          </div>
+
+          <div className="mt-8">
+            <span className="inline-flex rounded-full border border-[#00a8ff]/30 bg-[#00a8ff]/10 px-3.5 py-1.5 text-xs font-semibold text-[#00d9ff]">
+              {blogField?.name ?? "Cyber Security"}
             </span>
           </div>
 
-          {/* Field */}
-
-          <div className="mt-9">
-            <span className="inline-flex rounded-full border border-[#00a8ff]/20 bg-[#00a8ff]/[0.04] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#008fd6]">
-              {blogField?.name ??
-                "Cyber Security"}
-            </span>
-          </div>
-
-          {/* Title */}
-
-          <h1 className="mt-5 max-w-4xl text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-gray-900 sm:text-5xl lg:text-6xl">
+          <h1 className="mt-5 text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-gray-900 dark:text-white sm:text-5xl">
             {blog.title}
           </h1>
 
-          {/* Excerpt */}
-
           {blog.excerpt && (
-            <p className="mt-6 max-w-3xl text-base leading-8 text-gray-500 sm:text-lg">
+            <p className="mt-6 text-base leading-8 text-gray-500 dark:text-white/60 sm:text-lg">
               {blog.excerpt}
             </p>
           )}
 
-          {/* Metadata */}
-
-          <div className="mt-7 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-            <span className="font-medium text-gray-600">
+          <div className="mt-7 flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-white/40">
+            <span className="font-medium text-gray-600 dark:text-white/80">
               CyberIncidents Team
             </span>
 
-            <span className="h-1 w-1 rounded-full bg-gray-300" />
+            <span className="h-1 w-1 shrink-0 rounded-full bg-gray-300 dark:bg-white/20" />
 
-            <span>
-              {formatDate(
-                blog.publishedAt
-              )}
-            </span>
+            <span>{formatDate(blog.publishedAt)}</span>
 
             {blog.readTime && (
               <>
-                <span className="h-1 w-1 rounded-full bg-gray-300" />
+                <span className="h-1 w-1 shrink-0 rounded-full bg-gray-300 dark:bg-white/20" />
 
-                <span>
-                  {blog.readTime} min read
-                </span>
+                <span>{blog.readTime} min read</span>
               </>
             )}
           </div>
         </div>
       </section>
 
-      {/* ==========================================================
-          PRIMARY ARTICLE IMAGE
-      ========================================================== */}
-
       {primaryImage?.url && (
-        <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-          <div className="overflow-hidden rounded-2xl">
+        <section className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-12">
+          <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
             <img
               src={primaryImage.url}
-              alt={
-                primaryImage.altText ??
-                blog.title
-              }
-              className="h-auto max-h-[700px] w-full object-cover"
+              alt={primaryImage.altText ?? blog.title}
+              className="h-auto max-h-[600px] w-full object-cover"
             />
           </div>
         </section>
       )}
 
-      {/* ==========================================================
-          ARTICLE CONTENT
-      ========================================================== */}
+      <section className="mx-auto max-w-3xl px-5 pb-20 sm:px-8">
+        <ArticleContent content={blog.content} />
 
-      <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8 lg:px-10 lg:pb-24">
-        <div className="grid gap-14 lg:grid-cols-[minmax(0,760px)_280px] lg:justify-center lg:gap-20">
-          {/* Article */}
-
-          <div>
-            <ArticleContent
-              content={blog.content}
-            />
-
-            {/* Share */}
-
-            <div className="mt-12">
-              <ShareButtons
-                blogId={blog.id}
-                title={blog.title}
-                slug={blog.slug}
-              />
-            </div>
+        <div className="mt-16 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#090d14] px-5 py-5">
+          <div className="text-sm text-gray-500 dark:text-white/70">
+            Filed under{" "}
+            {blogField ? (
+              <Link
+                href={`/field/${blogField.slug}`}
+                className="font-semibold text-gray-800 dark:text-[#00d9ff] transition hover:text-[#00a8ff]"
+              >
+                {blogField.name}
+              </Link>
+            ) : (
+              <span className="font-semibold text-gray-800 dark:text-[#00d9ff]">
+                Cyber Security
+              </span>
+            )}
           </div>
 
-          {/* Sidebar */}
-
-          <aside className="hidden lg:block">
-            <div className="sticky top-28">
-              <div className="border-l-2 border-[#00a8ff] pl-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#008fd6]">
-                  In this article
-                </p>
-
-                <p className="mt-3 text-sm leading-6 text-gray-500">
-                  Explore the analysis and key
-                  concepts covered in this
-                  cybersecurity article.
-                </p>
-              </div>
-
-              {blogField && (
-                <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.15em] text-gray-400">
-                    Field
-                  </p>
-
-                  <Link
-                    href={`/field/${blogField.slug}`}
-                    className="mt-2 block text-sm font-semibold text-gray-800 transition hover:text-[#008fd6]"
-                  >
-                    {blogField.name}
-                  </Link>
-                </div>
-              )}
-            </div>
-          </aside>
+          <ShareButtons
+            blogId={blog.id}
+            title={blog.title}
+            slug={blog.slug}
+          />
         </div>
       </section>
 
-      {/* ==========================================================
-          RELATED CONTENT
-      ========================================================== */}
+      <RelatedArticles blogs={filteredRelatedBlogs} />
 
-      <RelatedArticles
-        blogs={filteredRelatedBlogs}
-      />
-
-      {/* ==========================================================
-          LATEST CONTENT
-      ========================================================== */}
-
-      <LatestBlogs
-        blogs={latestBlogs}
-      />
+      <LatestBlogs blogs={latestBlogs} />
     </main>
   );
 }
 
 export async function generateStaticParams() {
-  const blogs =
-    await getAllPublishedBlogSlugs();
+  const blogs = await getAllPublishedBlogSlugs();
 
   return blogs.map((blog) => ({
     slug: blog.slug,

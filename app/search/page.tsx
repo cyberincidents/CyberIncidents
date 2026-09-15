@@ -4,7 +4,6 @@ import Image from "next/image";
 import { searchPublishedBlogs } from "@/lib/data/db-blogs";
 import LiveSearchInput from "@/components/search/LiveSearchInput";
 
-
 type SearchPageProps = {
   searchParams: Promise<{
     q?: string;
@@ -22,10 +21,7 @@ function getPrimaryImage(
   return primary?.url ?? images[0]?.url ?? null;
 }
 
-function getExcerpt(
-  excerpt: string | null,
-  content: string
-) {
+function getExcerpt(excerpt: string | null, content: string) {
   if (excerpt?.trim()) {
     return excerpt.trim();
   }
@@ -42,97 +38,98 @@ function getExcerpt(
   return `${plainText.slice(0, 180).trim()}...`;
 }
 
-export default async function SearchPage({
-  searchParams,
-}: SearchPageProps) {
+function SearchIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4.5 4.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      className="h-4 w-4 shrink-0 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+    >
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim() : "";
 
-  const blogs = query
-    ? await searchPublishedBlogs(query)
-    : [];
+  const blogs = query ? await searchPublishedBlogs(query) : [];
 
   return (
-    <main className="min-h-screen bg-white">
-      {/* Header */}
-      <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-600">
-            CyberIncidents
-          </p>
-
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+    <main className="min-h-screen bg-white dark:bg-[#05070a] text-gray-900 dark:text-white transition-colors duration-300">
+      <section className="border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#05070a]">
+        <div className="mx-auto max-w-4xl px-5 py-16 sm:px-8">
+          <h1 className="text-3xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-4xl">
             Search
           </h1>
 
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+          <p className="mt-3 max-w-xl text-[15px] leading-6 text-gray-500 dark:text-white/60">
             Search cybersecurity incidents, threats, vulnerabilities,
-            privacy and defensive technologies.
+            privacy, and defensive technologies.
           </p>
 
-          {/* Search form */}
           <div className="mt-8">
-  <LiveSearchInput />
-</div>
+            <LiveSearchInput />
+          </div>
         </div>
       </section>
 
-      {/* Results */}
-      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10">
+      <section className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
         {!query ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-14 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-cyan-50 text-cyan-600">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <circle cx="11" cy="11" r="6.5" />
-                <path
-                  d="m16 16 4.5 4.5"
-                  strokeLinecap="round"
-                />
-              </svg>
+          <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#090d14] px-6 py-16 text-center">
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#00a8ff]/10 text-[#00a8ff]">
+              <SearchIcon />
             </div>
 
-            <h2 className="mt-5 text-lg font-semibold text-slate-950">
+            <h2 className="mt-5 text-base font-semibold text-gray-900 dark:text-white">
               Search CyberIncidents
             </h2>
 
-            <p className="mt-2 text-sm text-slate-500">
-              Enter a topic, threat, vulnerability, field or keyword
-              to find relevant articles.
+            <p className="mt-2 text-sm text-gray-500 dark:text-white/50">
+              Enter a topic, threat, vulnerability, field, or keyword to
+              find relevant articles.
             </p>
           </div>
         ) : (
           <>
-            <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600">
-                  Search Results
-                </p>
+            <div className="mb-9 flex flex-col gap-2 border-b border-gray-100 dark:border-white/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+              <h2 className="text-2xl font-bold tracking-[-0.02em] text-gray-900 dark:text-white">
+                Results for &ldquo;{query}&rdquo;
+              </h2>
 
-                <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                  Results for &ldquo;{query}&rdquo;
-                </h2>
-              </div>
-
-              <p className="text-sm text-slate-500">
-                {blogs.length}{" "}
-                {blogs.length === 1 ? "article" : "articles"} found
+              <p className="text-sm text-gray-500 dark:text-white/50">
+                {blogs.length} {blogs.length === 1 ? "article" : "articles"}{" "}
+                found
               </p>
             </div>
 
             {blogs.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-14 text-center">
-                <h2 className="text-lg font-semibold text-slate-950">
+              <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-[#090d14] px-6 py-16 text-center">
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white">
                   No articles found
                 </h2>
 
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-gray-500 dark:text-white/50">
                   Try a different keyword or search for another
                   cybersecurity topic.
                 </p>
@@ -145,40 +142,45 @@ export default async function SearchPage({
                   return (
                     <article
                       key={blog.id}
-                      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg"
+                      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#090d14] transition-all duration-300 hover:-translate-y-1 hover:border-[#00a8ff]/40 hover:shadow-xl hover:shadow-[#00a8ff]/[0.1]"
                     >
-                      {/* Image */}
-                      <Link
-                        href={`/blog/${blog.slug}`}
-                        className="block"
-                      >
-                        <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
+                      <Link href={`/blog/${blog.slug}`} className="block">
+                        <div className="relative aspect-[16/9] overflow-hidden bg-gray-100 dark:bg-white/5">
                           {primaryImage ? (
                             <Image
                               src={primaryImage}
                               alt={blog.title}
                               fill
                               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                              className="object-cover transition duration-500 group-hover:scale-105"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                           ) : (
-                            <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                            <div className="flex h-full items-center justify-center text-sm text-gray-400 dark:text-white/30">
                               No image
                             </div>
                           )}
                         </div>
+
+                        <div className="p-6 pb-0">
+                          <h3 className="flex items-start gap-1.5 text-lg font-bold leading-7 text-gray-900 dark:text-white transition-colors group-hover:text-[#00d9ff]">
+                            <span>{blog.title}</span>
+                            <ArrowIcon />
+                          </h3>
+
+                          <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-500 dark:text-white/50">
+                            {getExcerpt(blog.excerpt, blog.content)}
+                          </p>
+                        </div>
                       </Link>
 
-                      {/* Content */}
-                      <div className="p-6">
-                        {/* Fields */}
+                      <div className="flex flex-1 flex-col justify-end p-6 pt-4">
                         {blog.fields.length > 0 && (
                           <div className="flex flex-wrap gap-2">
                             {blog.fields.slice(0, 2).map((item) => (
                               <Link
                                 key={item.fieldId}
                                 href={`/field/${item.field.slug}`}
-                                className="text-[11px] font-bold uppercase tracking-[0.12em] text-cyan-600 transition hover:text-cyan-700"
+                                className="rounded-full bg-[#00a8ff]/10 px-2.5 py-1 text-xs font-semibold text-[#00d9ff] transition hover:bg-[#00a8ff]/20"
                               >
                                 {item.field.name}
                               </Link>
@@ -186,48 +188,18 @@ export default async function SearchPage({
                           </div>
                         )}
 
-                        <Link
-                          href={`/blog/${blog.slug}`}
-                          className="mt-3 block"
-                        >
-                          <h3 className="text-lg font-bold leading-7 text-slate-950 transition group-hover:text-cyan-700">
-                            {blog.title}
-                          </h3>
-                        </Link>
-
-                        <p className="mt-3 text-sm leading-6 text-slate-500">
-                          {getExcerpt(blog.excerpt, blog.content)}
-                        </p>
-
-                        {/* Tags */}
                         {blog.tags.length > 0 && (
-                          <div className="mt-4 flex flex-wrap gap-2">
+                          <div className="mt-3 flex flex-wrap gap-2">
                             {blog.tags.slice(0, 3).map((item) => (
                               <span
                                 key={item.tagId}
-                                className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500"
+                                className="rounded-full bg-gray-100 dark:bg-white/10 px-2.5 py-1 text-xs font-medium text-gray-500 dark:text-white/60"
                               >
                                 #{item.tag.name}
                               </span>
                             ))}
                           </div>
                         )}
-
-                        <div className="mt-6">
-                          <Link
-                            href={`/blog/${blog.slug}`}
-                            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-950 transition group-hover:text-cyan-700"
-                          >
-                            Read More
-
-                            <span
-                              aria-hidden="true"
-                              className="transition-transform duration-200 group-hover:translate-x-1"
-                            >
-                              →
-                            </span>
-                          </Link>
-                        </div>
                       </div>
                     </article>
                   );
