@@ -8,8 +8,7 @@ import { signOut, useSession } from "next-auth/react";
 import { fields } from "@/lib/data/fields";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
-// YouTube video used as the navbar background (autoplay requires muted + loop)
-const BG_VIDEO_ID = "WhtRhjbcrjg";
+
 
 export default function Navbar() {
   const pathname = usePathname();
