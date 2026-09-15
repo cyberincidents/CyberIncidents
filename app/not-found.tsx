@@ -75,7 +75,7 @@ export default function NotFound() {
             href="/#fields"
             className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/80 px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-700 shadow-sm backdrop-blur-sm transition-colors hover:border-[#0284c7] hover:text-[#0284c7] dark:border-white/15 dark:bg-white/5 dark:text-white/70 dark:hover:border-[#00a8ff]/40 dark:hover:text-white"
           >
-            Browse Fields
+            Browse Categories
           </Link>
         </div>
 

@@ -48,7 +48,7 @@ export default function Footer() {
           {/* Fields */}
           <div>
             <h2 className="text-sm font-semibold text-white">
-              Explore fields
+              Explore Catergories
             </h2>
 
             <ul className="mt-5 space-y-3">

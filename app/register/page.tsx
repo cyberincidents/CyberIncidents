@@ -289,16 +289,7 @@ export default function RegisterPage() {
         ================================================= */}
 
         <div className="text-center">
-          <Link
-            href="/"
-            className="inline-block"
-          >
-            <img
-              src="/brand/cyberincidents-logo.png"
-              alt="CyberIncidents"
-              className="mx-auto h-12 w-auto object-contain"
-            />
-          </Link>
+          
 
           <h1 className="mt-8 text-3xl font-bold text-slate-950 dark:text-white">
             Create an account

@@ -250,7 +250,7 @@ export default async function FieldPage({ params }: FieldPageProps) {
         <section className="border-t border-gray-100 dark:border-white/10 bg-white dark:bg-[#05070a]">
           <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-16">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-white/40">
-              Explore other fields
+              Explore other Categories
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">

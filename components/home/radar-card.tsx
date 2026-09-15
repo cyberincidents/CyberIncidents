@@ -26,9 +26,9 @@ export function RadarCard() {
       {/* Embedded Threat Map */}
       <div className="relative mt-2 overflow-hidden rounded-xl border border-slate-800 bg-[#060b13]">
         <iframe
-          src="https://cybermap.kaspersky.com/en/widget/dynamic/dark"
+          src="https://live-thread-animation.vercel.app/"
           title="Cyberthreat Real-Time Map"
-          className="h-[350px] w-full border-0 sm:h-[450px] [filter:hue-rotate(190deg)_saturate(1.5)_contrast(1.1)]"
+          className="h-[420px] w-full border-0 sm:h-[450px]"
           allowFullScreen
           loading="lazy"
         />

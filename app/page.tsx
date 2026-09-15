@@ -2,10 +2,12 @@ import { HeroContent } from "@/components/home/hero-content";
 import { RadarCard } from "@/components/home/radar-card";
 import { FieldSelector } from "@/components/home/field-selector";
 import { getFields } from "@/lib/data/db-fields";
+import LatestBlogs from "@/components/blog/LatestBlogs";
+import { getLatestBlogs } from "@/lib/data/db-blogs";
 
 export default async function Home() {
   const fields = await getFields();
-
+  const latestBlogs = await getLatestBlogs(3);
   const heroStats = [
     { value: "1,500+", label: "DEEP-DIVE REPORTS" },
     { value: "24/7", label: "DISCLOSURE RADAR" },
@@ -52,7 +54,7 @@ export default async function Home() {
       <FieldSelector fields={fields} />
         
       {/* INTRODUCTION and CTA sections stay as they were */}
-
+          <LatestBlogs blogs={latestBlogs} />
     </div>
   );
 }
