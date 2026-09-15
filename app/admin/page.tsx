@@ -97,7 +97,7 @@ export default async function AdminDashboardPage() {
             <StatCard label="Published" value={publishedBlogs} icon={<CheckCircleIcon />} />
             <StatCard label="Drafts" value={draftBlogs} icon={<PencilIcon />} />
             <StatCard label="Archived" value={archivedBlogs} icon={<ArchiveIcon />} />
-            <StatCard label="Fields" value={totalFields} icon={<FolderIcon />} />
+            <StatCard label="Category" value={totalFields} icon={<FolderIcon />} />
             <StatCard label="Views" value={totalViews} icon={<EyeIcon />} />
             <StatCard label="Shares" value={totalShares} icon={<ShareIcon />} />
             <StatCard label="Featured" value={featuredBlogs} icon={<StarIcon />} />

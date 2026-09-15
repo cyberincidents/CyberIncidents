@@ -116,7 +116,7 @@ export default async function AdminBlogsPage({ searchParams }: Props) {
               <thead className="bg-[#0a0a0c] border-b border-white/10">
                 <tr>
                   <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Blog</th>
-                  <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Field</th>
+                  <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Category</th>
                   <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Access</th>
                   <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Views</th>
                   <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">Shares</th>

@@ -102,14 +102,14 @@ export default function BlogFilters({ fields }: BlogFiltersProps) {
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {/* Field */}
             <div>
-              <label htmlFor="field" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Field</label>
+              <label htmlFor="field" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500">Category</label>
               <select
                 id="field"
                 value={field}
                 onChange={(e) => setField(e.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">All Fields</option>
+                <option value="">All Categories</option>
                 {fields.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.number ? `${item.number}. ` : ""}{item.name}
