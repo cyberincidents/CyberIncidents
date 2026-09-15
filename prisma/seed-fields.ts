@@ -1,6 +1,23 @@
-import { PrismaClient } from "@prisma/client";
+import "dotenv/config";
 
-const prisma = new PrismaClient();
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not defined.");
+}
+
+const adapter = new PrismaPg({
+  connectionString,
+  connectionTimeoutMillis: 30_000,
+  idleTimeoutMillis: 300_000,
+});
+
+const prisma = new PrismaClient({
+  adapter,
+});
 
 const categories = [
   {
@@ -20,7 +37,6 @@ const categories = [
       ["AI & Cybersecurity", "ai-cybersecurity"],
     ],
   },
-
   {
     number: "02",
     name: "Threats & Attacks",
@@ -44,13 +60,9 @@ const categories = [
       ],
       ["Insider Threats", "insider-threats"],
       ["Cloud Attacks", "cloud-attacks"],
-      [
-        "Mobile & IoT Attacks",
-        "mobile-iot-attacks",
-      ],
+      ["Mobile & IoT Attacks", "mobile-iot-attacks"],
     ],
   },
-
   {
     number: "03",
     name: "Incident Investigation",
@@ -81,14 +93,10 @@ const categories = [
         "identity-investigation",
       ],
       ["Log Analysis", "log-analysis"],
-      [
-        "Timeline Analysis",
-        "timeline-analysis",
-      ],
+      ["Timeline Analysis", "timeline-analysis"],
       ["Case Studies", "case-studies"],
     ],
   },
-
   {
     number: "04",
     name: "Security & Defense",
@@ -125,7 +133,6 @@ const categories = [
       ],
     ],
   },
-
   {
     number: "05",
     name: "Emerging Security",
@@ -160,7 +167,6 @@ const categories = [
       ],
     ],
   },
-
   {
     number: "06",
     name: "Guides & Learning",
@@ -197,11 +203,11 @@ const categories = [
         "penetration-testing",
       ],
       [
-        "Application Security",
+        "Application Security Guide",
         "application-security-guide",
       ],
       [
-        "Cloud Security",
+        "Cloud Security Guide",
         "cloud-security-guide",
       ],
       [
@@ -225,7 +231,40 @@ const categories = [
 ];
 
 async function main() {
+  console.log("Starting cybersecurity field seed...\n");
+
   for (const category of categories) {
+    /*
+     * -------------------------------------------------------
+     * CREATE / UPDATE PARENT CATEGORY
+     * -------------------------------------------------------
+     */
+
+    const parent = await prisma.field.upsert({
+      where: {
+        slug: category.slug,
+      },
+      update: {
+        name: category.name,
+        number: category.number,
+        parentId: null,
+      },
+      create: {
+        name: category.name,
+        slug: category.slug,
+        number: category.number,
+        parentId: null,
+      },
+    });
+
+    console.log(`✓ Parent: ${category.name}`);
+
+    /*
+     * -------------------------------------------------------
+     * CREATE / UPDATE SUBCATEGORIES
+     * -------------------------------------------------------
+     */
+
     for (const [name, slug] of category.subcategories) {
       await prisma.field.upsert({
         where: {
@@ -234,23 +273,30 @@ async function main() {
         update: {
           name,
           number: category.number,
+          parentId: parent.id,
         },
         create: {
           name,
           slug,
           number: category.number,
+          parentId: parent.id,
         },
       });
+
+      console.log(`  └─ ${name}`);
     }
+
+    console.log("");
   }
 
   console.log(
-    "Cybersecurity fields seeded successfully."
+    "Cybersecurity field hierarchy seeded successfully."
   );
 }
 
 main()
   .catch((error) => {
+    console.error("\nSeed failed:");
     console.error(error);
     process.exit(1);
   })
