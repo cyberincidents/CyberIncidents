@@ -512,14 +512,11 @@ export async function POST(
         error
       );
 
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Unable to send the password reset email. Please try again later.",
-        },
-        { status: 500 }
-      );
+     return NextResponse.json({
+  success: true,
+  message:
+    "If an account with that email exists, you will receive a password reset link shortly.",
+});
     }
 
     // --------------------------------------------------

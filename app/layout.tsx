@@ -6,10 +6,83 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import SmoothScroll from "@/components/smooth-scroll";
 import "./globals.css";
 
+const SITE_URL = "https://cyberincidents.in";
+
 export const metadata: Metadata = {
-  title: "CyberIncidents - Threats today, a safer tomorrow",
+  metadataBase: new URL(SITE_URL),
+
+  title: {
+    default: "CyberIncidents | Cybersecurity News, Threats & Analysis",
+    template: "%s | CyberIncidents",
+  },
+
   description:
-    "Cybersecurity incidents, research, analysis and security awareness.",
+    "CyberIncidents publishes cybersecurity news, threat intelligence, incident investigations, security research, emerging threats, and practical cybersecurity guides.",
+
+  applicationName: "CyberIncidents",
+
+  authors: [
+    {
+      name: "CyberIncidents",
+      url: SITE_URL,
+    },
+  ],
+
+  creator: "CyberIncidents",
+  publisher: "CyberIncidents",
+
+  keywords: [
+    "cybersecurity",
+    "cyber security",
+    "cybersecurity news",
+    "cyber threats",
+    "cyber attacks",
+    "threat intelligence",
+    "security incidents",
+    "incident investigation",
+    "network security",
+    "cloud security",
+    "application security",
+    "information security",
+    "cybersecurity research",
+    "cybersecurity analysis",
+    "cybersecurity awareness",
+    "cybersecurity guides",
+  ],
+
+  robots: {
+    index: true,
+    follow: true,
+
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+
+  alternates: {
+    canonical: SITE_URL,
+  },
+
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "CyberIncidents",
+    title: "CyberIncidents | Cybersecurity News, Threats & Analysis",
+    description:
+      "Cybersecurity news, threat intelligence, incident investigations, security research, emerging threats, and practical cybersecurity guides.",
+    locale: "en_US",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "CyberIncidents | Cybersecurity News, Threats & Analysis",
+    description:
+      "Cybersecurity news, threat intelligence, incident investigations, security research, emerging threats, and practical cybersecurity guides.",
+  },
 };
 
 export default function RootLayout({
@@ -18,7 +91,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body>
         <SmoothScroll>
           <ThemeProvider>

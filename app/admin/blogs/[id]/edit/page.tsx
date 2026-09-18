@@ -21,8 +21,8 @@ export default async function EditBlogPage({
   ===================================================== */
 
   if (!session?.user) {
-    redirect("/admin/login");
-  }
+  redirect("/login");
+}
 
   /* =====================================================
      ADMIN CHECK

@@ -23,7 +23,7 @@ type Props = {
 export default async function AdminBlogsPage({ searchParams }: Props) {
   const session = await auth();
 
-  if (!session?.user) redirect("/admin/login");
+  if (!session?.user) redirect("/login");
   if (session.user.role !== "ADMIN") redirect("/");
 
   const params = await searchParams;

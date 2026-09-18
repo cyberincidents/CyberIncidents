@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
@@ -74,18 +75,29 @@ export async function POST(request: Request) {
     -------------------------------- */
 
     if (!email) {
-      return NextResponse.json(
-        {
-          error: "Email is required.",
-        },
-        {
-          status: 400,
-        }
-      );
+  return NextResponse.json(
+    {
+      error: "Email is required.",
+    },
+    {
+      status: 400,
     }
+  );
+}
 
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (email.length > 254) {
+  return NextResponse.json(
+    {
+      error: "Please enter a valid email address.",
+    },
+    {
+      status: 400,
+    }
+  );
+}
+
+const emailRegex =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -179,33 +191,50 @@ export async function POST(request: Request) {
     -------------------------------- */
 
     if (image) {
-      if (
-        !image.startsWith(
-          "https://res.cloudinary.com/"
-        )
-      ) {
-        return NextResponse.json(
-          {
-            error: "Invalid profile image.",
-          },
-          {
-            status: 400,
-          }
-        );
+  if (image.length > 2000) {
+    return NextResponse.json(
+      {
+        error:
+          "Profile image URL is too long.",
+      },
+      {
+        status: 400,
       }
+    );
+  }
 
-      if (image.length > 2000) {
-        return NextResponse.json(
-          {
-            error:
-              "Profile image URL is too long.",
-          },
-          {
-            status: 400,
-          }
-        );
-      }
+  try {
+    const imageUrl = new URL(image);
+    const cloudName =
+      process.env.CLOUDINARY_CLOUD_NAME;
+
+    if (
+      imageUrl.protocol !== "https:" ||
+      imageUrl.hostname !== "res.cloudinary.com" ||
+      !cloudName ||
+      imageUrl.pathname.length === 0 ||
+      !imageUrl.pathname.startsWith(`/${cloudName}/`)
+    ) {
+      return NextResponse.json(
+        {
+          error: "Invalid profile image.",
+        },
+        {
+          status: 400,
+        }
+      );
     }
+  } catch {
+    return NextResponse.json(
+      {
+        error: "Invalid profile image.",
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+}
 
     /* =====================================================
        CHECK EXISTING USER
@@ -282,20 +311,35 @@ export async function POST(request: Request) {
         status: 201,
       }
     );
-  } catch (error) {
-    console.error(
-      "USER_REGISTRATION_ERROR:",
-      error
-    );
-
+} catch (error) {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
     return NextResponse.json(
       {
         error:
-          "Something went wrong while creating your account.",
+          "An account with this email already exists.",
       },
       {
-        status: 500,
+        status: 409,
       }
     );
   }
+
+  console.error(
+    "USER_REGISTRATION_ERROR:",
+    error
+  );
+
+  return NextResponse.json(
+    {
+      error:
+        "Something went wrong while creating your account.",
+    },
+    {
+      status: 500,
+    }
+  );
+}
 }

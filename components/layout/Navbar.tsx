@@ -727,10 +727,10 @@ export default function Navbar() {
 
       <div className="relative flex flex-col items-center justify-center overflow-visible pt-2.5 pb-0 sm:pt-3">
         <Link
-          href="/"
-          onClick={closeMenus}
-          className="relative block h-24 w-auto transition-transform hover:scale-[1.02] sm:h-32 lg:h-36"
-        >
+  href="/"
+  onClick={closeMenus}
+  className="relative block h-28 w-auto translate-y-5 transition-transform hover:scale-[1.02] sm:h-32 lg:h-36"
+>
           <Image
             src="/brand/logo-transp.png"
             alt="CyberIncidents Logo"
@@ -781,9 +781,19 @@ export default function Navbar() {
                 aria-expanded={accountOpen}
                 aria-haspopup="menu"
                 aria-label="Open account menu"
-                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[#00a8ff]/50 bg-[#00a8ff]/15 text-sm font-bold text-[#00a8ff] shadow-[0_0_10px_rgba(0,168,255,0.2)] transition hover:border-[#00a8ff] hover:bg-[#00a8ff] hover:text-white"
+                className="relative flex h-9 w-9 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-[#00a8ff]/50 bg-[#00a8ff]/15 text-sm font-bold text-[#00a8ff] shadow-[0_0_10px_rgba(0,168,255,0.2)] transition hover:border-[#00a8ff] hover:bg-[#00a8ff] hover:text-white"
               >
-                {firstLetter}
+                {user.image ? (
+                  <Image
+                    src={user.image}
+                    alt={displayName}
+                    fill
+                    sizes="36px"
+                    className="object-cover"
+                  />
+                ) : (
+                  firstLetter
+                )}
               </button>
 
               {accountOpen && (
@@ -1188,8 +1198,18 @@ export default function Navbar() {
                 onClick={closeMenus}
                 className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 font-bold text-zinc-300">
-                  {firstLetter}
+                <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10 font-bold text-zinc-300">
+                  {user.image ? (
+                    <Image
+                      src={user.image}
+                      alt={displayName}
+                      fill
+                      sizes="44px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    firstLetter
+                  )}
                 </span>
 
                 <div className="min-w-0">

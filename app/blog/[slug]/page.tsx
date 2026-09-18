@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,13 +15,17 @@ import {
   getLatestBlogs,
 } from "@/lib/data/db-blogs";
 
+const SITE_URL = "https://cyberincidents.in";
+
 /*
  * Blog pages are managed dynamically from the admin panel.
  *
  * This ensures newly published or edited blogs are immediately
  * available without requiring a new deployment.
+ *
+ * Do not use generateStaticParams() here because blog content
+ * is managed dynamically from the admin panel.
  */
-// export const dynamic = "force-dynamic";
 
 type BlogPageProps = {
   params: Promise<{
@@ -37,14 +42,11 @@ function formatDate(date: Date | null) {
     return "";
   }
 
-  return new Date(date).toLocaleDateString(
-    "en-US",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }
-  );
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 /* =====================================================
@@ -60,11 +62,170 @@ function getPrimaryImage(blog: {
   }[];
 }) {
   return (
-    blog.images.find(
-      (image) => image.isPrimary
-    ) ??
+    blog.images.find((image) => image.isPrimary) ??
     blog.images[0]
   );
+}
+
+/* =====================================================
+   SEO DESCRIPTION
+===================================================== */
+
+function getSeoDescription(
+  title: string,
+  excerpt: string | null
+) {
+  const fallback = `Read ${title} on CyberIncidents — cybersecurity news, threat intelligence, security research, incident analysis and practical security insights.`;
+
+  const description =
+    excerpt?.trim() || fallback;
+
+  /*
+   * Keep descriptions reasonably concise for search
+   * previews while preserving the actual article meaning.
+   */
+  if (description.length <= 160) {
+    return description;
+  }
+
+  return `${description.slice(0, 157).trimEnd()}...`;
+}
+
+/* =====================================================
+   DYNAMIC SEO METADATA
+===================================================== */
+
+export async function generateMetadata({
+  params,
+}: BlogPageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  const blog = await getBlogBySlug(slug);
+
+  if (!blog) {
+    return {
+      title: "Article Not Found",
+      description:
+        "The requested CyberIncidents article could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const primaryImage =
+    getPrimaryImage(blog);
+
+  const description =
+    getSeoDescription(
+      blog.title,
+      blog.excerpt
+    );
+
+  const canonicalUrl =
+    `${SITE_URL}/blog/${blog.slug}`;
+
+  const imageUrl =
+    primaryImage?.url ?? undefined;
+
+  const publishedTime =
+    blog.publishedAt
+      ? new Date(
+          blog.publishedAt
+        ).toISOString()
+      : undefined;
+
+  const modifiedTime =
+    blog.updatedAt
+      ? new Date(
+          blog.updatedAt
+        ).toISOString()
+      : publishedTime;
+
+  return {
+    title: blog.title,
+
+    description,
+
+    alternates: {
+      canonical: canonicalUrl,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
+
+    openGraph: {
+      type: "article",
+      url: canonicalUrl,
+      siteName: "CyberIncidents",
+      title: blog.title,
+      description,
+      locale: "en_US",
+
+      ...(publishedTime
+        ? {
+            publishedTime,
+          }
+        : {}),
+
+      ...(modifiedTime
+        ? {
+            modifiedTime,
+          }
+        : {}),
+
+      authors: [
+        "https://cyberincidents.in",
+      ],
+
+      ...(imageUrl
+        ? {
+            images: [
+              {
+                url: imageUrl,
+                width: 1200,
+                height: 675,
+                alt:
+                  primaryImage?.altText ??
+                  blog.title,
+              },
+            ],
+          }
+        : {}),
+    },
+
+    twitter: {
+      card: imageUrl
+        ? "summary_large_image"
+        : "summary",
+
+      title: blog.title,
+      description,
+
+      ...(imageUrl
+        ? {
+            images: [
+              {
+                url: imageUrl,
+                alt:
+                  primaryImage?.altText ??
+                  blog.title,
+              },
+            ],
+          }
+        : {}),
+    },
+  };
 }
 
 /* =====================================================
@@ -88,7 +249,7 @@ export default async function BlogPage({
 
   /* ===================================================
      PRIMARY FIELD
-     
+
      A blog can belong to multiple fields.
      The first selected field is used for:
      - breadcrumb
@@ -120,7 +281,7 @@ export default async function BlogPage({
 
   /* ===================================================
      LATEST CONTENT
-     
+
      Global latest published blogs.
   =================================================== */
 
@@ -142,11 +303,165 @@ export default async function BlogPage({
     getPrimaryImage(blog);
 
   /* ===================================================
+     SEO DATA
+  =================================================== */
+
+  const canonicalUrl =
+    `${SITE_URL}/blog/${blog.slug}`;
+
+  const description =
+    getSeoDescription(
+      blog.title,
+      blog.excerpt
+    );
+
+  const publishedTime =
+    blog.publishedAt
+      ? new Date(
+          blog.publishedAt
+        ).toISOString()
+      : undefined;
+
+  const modifiedTime =
+    blog.updatedAt
+      ? new Date(
+          blog.updatedAt
+        ).toISOString()
+      : publishedTime;
+
+  /* ===================================================
+     BLOGPOSTING STRUCTURED DATA
+  =================================================== */
+
+  const blogPostingSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+
+    "@id": `${canonicalUrl}#article`,
+
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalUrl,
+    },
+
+    headline: blog.title,
+
+    description,
+
+    url: canonicalUrl,
+
+    ...(primaryImage?.url
+      ? {
+          image: [
+            primaryImage.url,
+          ],
+        }
+      : {}),
+
+    ...(publishedTime
+      ? {
+          datePublished:
+            publishedTime,
+        }
+      : {}),
+
+    ...(modifiedTime
+      ? {
+          dateModified:
+            modifiedTime,
+        }
+      : {}),
+
+    author: {
+      "@type": "Organization",
+      name: "CyberIncidents",
+      url: SITE_URL,
+    },
+
+    publisher: {
+      "@type": "Organization",
+      name: "CyberIncidents",
+      url: SITE_URL,
+    },
+
+    isPartOf: {
+      "@type": "WebSite",
+      name: "CyberIncidents",
+      url: SITE_URL,
+    },
+
+    ...(blogField
+      ? {
+          articleSection:
+            blogField.name,
+        }
+      : {}),
+  };
+
+  /* ===================================================
+     BREADCRUMB STRUCTURED DATA
+  =================================================== */
+
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: SITE_URL,
+    },
+  ];
+
+  if (blogField) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 2,
+      name: blogField.name,
+      item: `${SITE_URL}/field/${blogField.slug}`,
+    });
+  }
+
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    position:
+      blogField ? 3 : 2,
+    name: blog.title,
+    item: canonicalUrl,
+  });
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems,
+  };
+
+  /* ===================================================
      RENDER
   =================================================== */
 
   return (
     <main className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-[#05070a] dark:text-white">
+
+      {/* =================================================
+          STRUCTURED DATA
+      ================================================= */}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            blogPostingSchema
+          ),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbSchema
+          ),
+        }}
+      />
 
       {/* =================================================
           VIEW TRACKER
@@ -168,7 +483,10 @@ export default async function BlogPage({
               BREADCRUMB
           ================================================= */}
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 dark:text-white/40">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex flex-wrap items-center gap-2 text-xs text-gray-400 dark:text-white/40"
+          >
 
             <Link
               href="/"
@@ -177,7 +495,9 @@ export default async function BlogPage({
               Home
             </Link>
 
-            <span>/</span>
+            <span aria-hidden="true">
+              /
+            </span>
 
             {blogField && (
               <>
@@ -188,15 +508,20 @@ export default async function BlogPage({
                   {blogField.name}
                 </Link>
 
-                <span>/</span>
+                <span aria-hidden="true">
+                  /
+                </span>
               </>
             )}
 
-            <span className="text-gray-500 dark:text-white/60">
+            <span
+              aria-current="page"
+              className="text-gray-500 dark:text-white/60"
+            >
               Article
             </span>
 
-          </div>
+          </nav>
 
           {/* =================================================
               FIELD BADGE
@@ -271,17 +596,20 @@ export default async function BlogPage({
       {primaryImage?.url && (
         <section className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-12">
 
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5">
+          <figure className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5">
 
             <Image
               src={primaryImage.url}
-              alt={primaryImage.altText ?? blog.title}
+              alt={
+                primaryImage.altText ??
+                blog.title
+              }
               width={1200}
               height={675}
               className="h-auto max-h-[600px] w-full object-cover"
             />
 
-          </div>
+          </figure>
 
         </section>
       )}

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,6 +14,8 @@ import {
 } from "@/lib/data/db-blogs";
 
 import { getFields } from "@/lib/data/db-fields";
+
+const SITE_URL = "https://cyberincidents.in";
 
 /* =====================================================
    DYNAMIC FIELD PAGE
@@ -71,6 +74,207 @@ function formatDate(
       day: "numeric",
     }
   );
+}
+
+/* =====================================================
+   SEO DESCRIPTION
+===================================================== */
+
+function getFieldSeoDescription(
+  fieldName: string,
+  description: string | null,
+  isParentCategory: boolean
+) {
+  if (description?.trim()) {
+    const cleanDescription =
+      description.trim();
+
+    if (cleanDescription.length <= 160) {
+      return cleanDescription;
+    }
+
+    return `${cleanDescription
+      .slice(0, 157)
+      .trimEnd()}...`;
+  }
+
+  if (isParentCategory) {
+    return `Explore ${fieldName} cybersecurity articles, threat intelligence, security analysis, incident reports and practical security insights from CyberIncidents.`;
+  }
+
+  return `Explore ${fieldName} cybersecurity articles, research, security analysis and practical insights from CyberIncidents.`;
+}
+
+/* =====================================================
+   DYNAMIC FIELD SEO
+===================================================== */
+
+export async function generateMetadata({
+  params,
+}: FieldPageProps): Promise<Metadata> {
+  const { slug } = await params;
+
+  /*
+   * Invalid URL structure.
+   */
+  if (
+    !slug ||
+    slug.length === 0 ||
+    slug.length > 2
+  ) {
+    return {
+      title: "Field Not Found",
+      description:
+        "The requested CyberIncidents cybersecurity field could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const parentSlug = slug[0];
+
+  const currentSlug =
+    slug[slug.length - 1];
+
+  const field =
+    await getFieldBySlug(
+      currentSlug
+    );
+
+  /*
+   * Field does not exist.
+   */
+  if (!field) {
+    return {
+      title: "Field Not Found",
+      description:
+        "The requested CyberIncidents cybersecurity field could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  /*
+   * A child field must always include
+   * its parent in the URL.
+   */
+  if (
+    slug.length === 1 &&
+    field.parentId
+  ) {
+    return {
+      title: "Field Not Found",
+      description:
+        "The requested CyberIncidents cybersecurity field could not be found.",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  /*
+   * A two-level URL must contain an
+   * actual child field.
+   */
+  if (slug.length === 2) {
+    if (
+      !field.parentId ||
+      !field.parent ||
+      field.parent.slug !==
+        parentSlug
+    ) {
+      return {
+        title: "Field Not Found",
+        description:
+          "The requested CyberIncidents cybersecurity field could not be found.",
+        robots: {
+          index: false,
+          follow: false,
+        },
+      };
+    }
+  }
+
+  const isParentCategory =
+    slug.length === 1 &&
+    !field.parentId;
+
+  const isSubcategory =
+    slug.length === 2 &&
+    Boolean(field.parentId);
+
+  /*
+   * Canonical URL.
+   */
+  const canonicalUrl =
+    `${SITE_URL}/field/${slug.join("/")}`;
+
+  /*
+   * SEO title.
+   */
+  const title = isParentCategory
+    ? `${field.name} Cybersecurity`
+    : `${field.name} Cybersecurity`;
+
+  /*
+   * SEO description.
+   */
+  const description =
+    getFieldSeoDescription(
+      field.name,
+      field.description,
+      isParentCategory
+    );
+
+  /*
+   * Open Graph title.
+   */
+  const ogTitle = isParentCategory
+    ? `${field.name} | CyberIncidents`
+    : `${field.name} | ${field.parent?.name ?? "Cybersecurity"} | CyberIncidents`;
+
+  return {
+    title,
+
+    description,
+
+    alternates: {
+      canonical: canonicalUrl,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
+
+    openGraph: {
+      type: "website",
+      url: canonicalUrl,
+      siteName: "CyberIncidents",
+      title: ogTitle,
+      description,
+      locale: "en_US",
+    },
+
+    twitter: {
+      card: "summary",
+      title: ogTitle,
+      description,
+    },
+  };
 }
 
 /* =====================================================
@@ -268,11 +472,141 @@ export default async function FieldPage({
     "00";
 
   /* ===================================================
+     SEO DATA
+  =================================================== */
+
+  const canonicalUrl =
+    `${SITE_URL}/field/${slug.join("/")}`;
+
+  const seoDescription =
+    getFieldSeoDescription(
+      field.name,
+      field.description,
+      isParentCategory
+    );
+
+  /* ===================================================
+     COLLECTION PAGE SCHEMA
+  =================================================== */
+
+  const collectionPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+
+    "@id": `${canonicalUrl}#collection`,
+
+    url: canonicalUrl,
+
+    name: field.name,
+
+    description:
+      seoDescription,
+
+    isPartOf: {
+      "@type": "WebSite",
+      name: "CyberIncidents",
+      url: SITE_URL,
+    },
+
+    about: {
+      "@type": "Thing",
+      name: `${field.name} cybersecurity`,
+    },
+
+    mainEntity: {
+      "@type": "ItemList",
+
+      numberOfItems:
+        blogs.length,
+
+      itemListElement:
+        blogs
+          .slice(0, 20)
+          .map(
+            (blog, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              name: blog.title,
+              url: `${SITE_URL}/blog/${blog.slug}`,
+            })
+          ),
+    },
+  };
+
+  /* ===================================================
+     BREADCRUMB SCHEMA
+  =================================================== */
+
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: SITE_URL,
+    },
+  ];
+
+  if (
+    isSubcategory &&
+    field.parent
+  ) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 2,
+      name: field.parent.name,
+      item: `${SITE_URL}/field/${field.parent.slug}`,
+    });
+
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 3,
+      name: field.name,
+      item: canonicalUrl,
+    });
+  } else {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 2,
+      name: field.name,
+      item: canonicalUrl,
+    });
+  }
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement:
+      breadcrumbItems,
+  };
+
+  /* ===================================================
      RENDER
   =================================================== */
 
   return (
     <main className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-[#05070a] dark:text-white">
+
+      {/* =================================================
+          STRUCTURED DATA
+      ================================================= */}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            collectionPageSchema
+          ),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbSchema
+          ),
+        }}
+      />
 
       {/* =================================================
           HEADER
@@ -286,7 +620,10 @@ export default async function FieldPage({
               BREADCRUMB
           ================================================= */}
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 dark:text-white/40">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex flex-wrap items-center gap-2 text-xs text-gray-400 dark:text-white/40"
+          >
 
             <Link
               href="/"
@@ -295,7 +632,9 @@ export default async function FieldPage({
               Home
             </Link>
 
-            <span>/</span>
+            <span aria-hidden="true">
+              /
+            </span>
 
             {field.parent && (
               <>
@@ -306,15 +645,20 @@ export default async function FieldPage({
                   {field.parent.name}
                 </Link>
 
-                <span>/</span>
+                <span aria-hidden="true">
+                  /
+                </span>
               </>
             )}
 
-            <span className="text-gray-600 dark:text-white/70">
+            <span
+              aria-current="page"
+              className="text-gray-600 dark:text-white/70"
+            >
               {field.name}
             </span>
 
-          </div>
+          </nav>
 
           {/* =================================================
               CATEGORY HEADER
@@ -390,7 +734,7 @@ export default async function FieldPage({
 
       {/* =================================================
           TOPICS
-          
+
           Only shown on parent category pages.
       ================================================= */}
 

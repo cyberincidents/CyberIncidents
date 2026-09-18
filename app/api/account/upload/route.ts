@@ -10,6 +10,44 @@ const ALLOWED_TYPES = new Set([
   "image/webp",
 ]);
 
+function isValidImageSignature(
+  buffer: Buffer,
+  mimeType: string
+): boolean {
+  if (mimeType === "image/jpeg") {
+    return (
+      buffer.length >= 3 &&
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[2] === 0xff
+    );
+  }
+
+  if (mimeType === "image/png") {
+    return (
+      buffer.length >= 8 &&
+      buffer[0] === 0x89 &&
+      buffer[1] === 0x50 &&
+      buffer[2] === 0x4e &&
+      buffer[3] === 0x47 &&
+      buffer[4] === 0x0d &&
+      buffer[5] === 0x0a &&
+      buffer[6] === 0x1a &&
+      buffer[7] === 0x0a
+    );
+  }
+
+  if (mimeType === "image/webp") {
+    return (
+      buffer.length >= 12 &&
+      buffer.toString("ascii", 0, 4) === "RIFF" &&
+      buffer.toString("ascii", 8, 12) === "WEBP"
+    );
+  }
+
+  return false;
+}
+
 export async function POST(request: Request) {
   const session = await auth();
 
@@ -20,7 +58,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const formData = await request.formData();
+  let formData: FormData;
+
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid multipart form data" },
+      { status: 400 }
+    );
+  }
+
   const file = formData.get("file");
 
   if (!(file instanceof File)) {
@@ -40,6 +88,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (file.size <= 0) {
+    return NextResponse.json(
+      { error: "Image file is empty" },
+      { status: 400 }
+    );
+  }
+
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json(
       {
@@ -49,7 +104,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  let buffer: Buffer;
+
+  try {
+    buffer = Buffer.from(await file.arrayBuffer());
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to read image file" },
+      { status: 400 }
+    );
+  }
+
+  if (!isValidImageSignature(buffer, file.type)) {
+    return NextResponse.json(
+      { error: "Invalid or corrupted image file" },
+      { status: 400 }
+    );
+  }
 
   const result = await new Promise<{
     public_id: string;
@@ -91,7 +162,6 @@ export async function POST(request: Request) {
     uploadStream.end(buffer);
   }).catch((error) => {
     console.error("Profile image upload failed:", error);
-
     return null;
   });
 

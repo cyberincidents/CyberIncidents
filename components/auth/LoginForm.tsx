@@ -81,12 +81,21 @@ export default function LoginForm({
       .toLowerCase()
       .trim();
 
-    if (!normalizedEmail) {
-      setError("Email is required.");
-      return;
-    }
+if (!normalizedEmail) {
+  setError("Email is required.");
+  return;
+}
 
-    if (!password) {
+if (
+  !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    normalizedEmail
+  )
+) {
+  setError("Please enter a valid email address.");
+  return;
+}
+
+if (!password) {
       setError("Password is required.");
       return;
     }
@@ -135,8 +144,12 @@ export default function LoginForm({
   ===================================================== */
 
   async function handleGoogleSignIn() {
-    setError("");
-    setGoogleLoading(true);
+  if (isLoading) {
+    return;
+  }
+
+  setError("");
+  setGoogleLoading(true);
 
     try {
       await signIn("google", {

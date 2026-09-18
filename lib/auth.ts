@@ -2,13 +2,43 @@ import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
+
 import { prisma } from "@/lib/prisma";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+const AUTH_SECRET = process.env.AUTH_SECRET;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET =
+  process.env.GOOGLE_CLIENT_SECRET;
+
+if (!AUTH_SECRET) {
+  throw new Error("AUTH_SECRET is not configured.");
+}
+
+if (!GOOGLE_CLIENT_ID) {
+  throw new Error(
+    "GOOGLE_CLIENT_ID is not configured."
+  );
+}
+
+if (!GOOGLE_CLIENT_SECRET) {
+  throw new Error(
+    "GOOGLE_CLIENT_SECRET is not configured."
+  );
+}
+
+export const {
+  handlers,
+  signIn,
+  signOut,
+  auth,
+} = NextAuth({
+  trustHost: true,
+  secret: AUTH_SECRET,
+
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
     }),
 
     Credentials({
@@ -19,6 +49,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           label: "Email",
           type: "email",
         },
+
         password: {
           label: "Password",
           type: "password",
@@ -26,7 +57,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
 
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (
+          !credentials?.email ||
+          !credentials?.password
+        ) {
           return null;
         }
 
@@ -73,6 +107,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
        * GOOGLE AUTHENTICATION
        * ========================================================
        */
+
       if (account?.provider === "google") {
         if (!user.email) {
           return false;
@@ -93,7 +128,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         /*
          * Only accept a verified Google email.
          */
-        if (googleProfile?.email_verified === false) {
+        if (googleProfile?.email_verified !== true) {
           return false;
         }
 
@@ -161,6 +196,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               role: "USER",
               emailVerified: new Date(),
             },
+
             select: {
               id: true,
               name: true,
@@ -193,25 +229,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               where: {
                 id: dbUser.id,
               },
+
               data: updateData,
             });
           }
         }
 
         /*
-         * Convert Auth.js values to Prisma-compatible
-         * values before storing them.
+         * Convert only the OAuth account values that
+         * are actually needed by CyberIncidents.
+         *
+         * OAuth access/refresh/id tokens are intentionally
+         * not stored because the application currently uses
+         * Google only for authentication.
          */
-        const refreshToken =
-          typeof account.refresh_token === "string"
-            ? account.refresh_token
-            : null;
-
-        const accessToken =
-          typeof account.access_token === "string"
-            ? account.access_token
-            : null;
-
         const tokenType =
           typeof account.token_type === "string"
             ? account.token_type
@@ -220,11 +251,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const scope =
           typeof account.scope === "string"
             ? account.scope
-            : null;
-
-        const idToken =
-          typeof account.id_token === "string"
-            ? account.id_token
             : null;
 
         const sessionState =
@@ -250,23 +276,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             provider: account.provider,
             providerAccountId:
               account.providerAccountId,
-            refresh_token: refreshToken,
-            access_token: accessToken,
+
             expires_at: account.expires_at ?? null,
             token_type: tokenType,
             scope,
-            id_token: idToken,
             session_state: sessionState,
           },
 
           update: {
             userId: dbUser.id,
-            refresh_token: refreshToken,
-            access_token: accessToken,
+
             expires_at: account.expires_at ?? null,
             token_type: tokenType,
             scope,
-            id_token: idToken,
             session_state: sessionState,
           },
         });
@@ -279,6 +301,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
        * EMAIL / PASSWORD AUTHENTICATION
        * ========================================================
        */
+
       if (account?.provider === "credentials") {
         return Boolean(user.email);
       }
@@ -291,6 +314,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
      * JWT
      * ==========================================================
      */
+
     async jwt({
       token,
       user,
@@ -305,6 +329,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
        * Always load the values from PostgreSQL rather than
        * trusting values sent by the browser.
        */
+
       if (trigger === "update" && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: {
@@ -312,6 +337,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               .toLowerCase()
               .trim(),
           },
+
           select: {
             id: true,
             name: true,
@@ -333,6 +359,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       /*
        * Initial login.
        */
+
       if (user?.email) {
         const email = user.email
           .toLowerCase()
@@ -342,6 +369,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: {
             email,
           },
+
           select: {
             id: true,
             email: true,
@@ -362,6 +390,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       /*
        * Google fallback.
        */
+
       if (
         account?.provider === "google" &&
         token.email &&
@@ -373,6 +402,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               .toLowerCase()
               .trim(),
           },
+
           select: {
             id: true,
             name: true,
@@ -397,6 +427,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
      * SESSION
      * ==========================================================
      */
+
     async session({ session, token }) {
       if (session.user) {
         session.user.id = String(token.id);
