@@ -47,7 +47,12 @@ function renderText(text: string) {
     const trimmed = line.trim();
 
     if (!trimmed) {
-      return <div key={index} className="h-4" />;
+      return (
+        <div
+          key={index}
+          className="h-4"
+        />
+      );
     }
 
     if (trimmed.startsWith("## ")) {
@@ -56,7 +61,10 @@ function renderText(text: string) {
           key={index}
           className="mt-10 mb-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
         >
-          {trimmed.replace(/^##\s+/, "")}
+          {trimmed.replace(
+            /^##\s+/,
+            ""
+          )}
         </h2>
       );
     }
@@ -67,7 +75,10 @@ function renderText(text: string) {
           key={index}
           className="mt-8 mb-3 text-xl font-semibold text-gray-900 dark:text-white"
         >
-          {trimmed.replace(/^###\s+/, "")}
+          {trimmed.replace(
+            /^###\s+/,
+            ""
+          )}
         </h3>
       );
     }
@@ -81,6 +92,27 @@ function renderText(text: string) {
       </p>
     );
   });
+}
+
+/* =====================================================
+   ZERO TRACE WATERMARK
+===================================================== */
+
+function Watermark() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-0 flex justify-center"
+      aria-hidden="true"
+    >
+      <div
+        className="sticky top-32 h-[280px] w-[280px] bg-contain bg-center bg-no-repeat opacity-[0.035] dark:opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "url('/branding/zerotrace-watermark.png')",
+        }}
+      />
+    </div>
+  );
 }
 
 export default function ArticleContent({
@@ -97,41 +129,47 @@ export default function ArticleContent({
   if (isContentBlockArray(parsedContent)) {
     return (
       <div className="relative">
-        <div
-          className="pointer-events-none absolute inset-0 z-0 flex justify-center"
-          aria-hidden="true"
-        >
-          <img
-            src="/branding/zerotrace-watermark.png"
-            alt=""
-            className="sticky top-32 h-fit w-[280px] opacity-[0.035] dark:opacity-[0.08]"
-          />
-        </div>
+        {/* =================================================
+            ZERO TRACE WATERMARK
+        ================================================= */}
+
+        <Watermark />
+
+        {/* =================================================
+            ARTICLE CONTENT
+        ================================================= */}
 
         <div className="relative z-10">
-          {parsedContent.map((block, index) => {
-            if (block.type === "text") {
+          {parsedContent.map(
+            (block, index) => {
+              if (
+                block.type === "text"
+              ) {
+                return (
+                  <div key={index}>
+                    {renderText(
+                      block.text
+                    )}
+                  </div>
+                );
+              }
+
               return (
-                <div key={index}>
-                  {renderText(block.text)}
-                </div>
+                <figure
+                  key={index}
+                  className="my-10 overflow-hidden rounded-xl border border-gray-200 dark:border-white/10"
+                >
+                  <img
+                    src={block.url}
+                    alt="CyberIncidents article image"
+                    className="mx-auto h-auto max-h-[700px] w-full object-contain"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </figure>
               );
             }
-
-            return (
-              <figure
-                key={index}
-                className="my-10 overflow-hidden rounded-xl border border-gray-200 dark:border-white/10"
-              >
-                <img
-                  src={block.url}
-                  alt=""
-                  className="mx-auto h-auto max-h-[700px] w-full object-contain"
-                  loading="lazy"
-                />
-              </figure>
-            );
-          })}
+          )}
         </div>
       </div>
     );
@@ -139,16 +177,15 @@ export default function ArticleContent({
 
   return (
     <div className="relative">
-      <div
-        className="pointer-events-none absolute inset-0 z-0 flex justify-center"
-        aria-hidden="true"
-      >
-        <img
-          src="/branding/zerotrace-watermark.png"
-          alt=""
-          className="sticky top-32 h-fit w-[280px] opacity-[0.035] dark:opacity-[0.08]"
-        />
-      </div>
+      {/* =================================================
+          ZERO TRACE WATERMARK
+      ================================================= */}
+
+      <Watermark />
+
+      {/* =================================================
+          ARTICLE CONTENT
+      ================================================= */}
 
       <div className="relative z-10">
         {renderText(content)}
