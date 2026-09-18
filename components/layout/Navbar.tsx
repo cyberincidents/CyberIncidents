@@ -732,13 +732,15 @@ export default function Navbar() {
   className="relative block h-28 w-auto translate-y-5 transition-transform hover:scale-[1.02] sm:h-32 lg:h-36"
 >
           <Image
-            src="/brand/logo-transp.png"
-            alt="CyberIncidents Logo"
-            width={1000}
-            height={300}
-            priority
-            className="h-full w-auto object-contain drop-shadow-md"
-          />
+  src="/brand/logo-transp.png"
+  alt="CyberIncidents Logo"
+  width={1000}
+  height={300}
+  sizes="(min-width: 1024px) 480px, (min-width: 640px) 427px, 373px"
+  quality={75}
+  priority
+  className="h-full w-auto object-contain drop-shadow-md"
+/>
         </Link>
 
         {/* ========================================================
