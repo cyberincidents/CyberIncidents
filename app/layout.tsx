@@ -5,6 +5,7 @@ import AuthSessionProvider from "@/components/providers/AuthSessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import SmoothScroll from "@/components/smooth-scroll";
 import "./globals.css";
+import PageLoader from "@/components/layout/PageLoader";
 
 const SITE_URL = "https://cyberincidents.in";
 
@@ -93,6 +94,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <PageLoader />
         <SmoothScroll>
           <ThemeProvider>
             <AuthSessionProvider>

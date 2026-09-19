@@ -42,7 +42,7 @@ export function HeroContent({ heroStats }: { heroStats: { value: string; label: 
         A cybersecurity publication covering the threats, technologies, and adversarial tactics shaping the digital world. Built for security teams, engineers, and digital defenders.
       </motion.p>
 
-      {/* Hero Stats / Badges */}
+      {/* Hero Stats / Badges
       <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center gap-4 text-xs font-mono">
         {heroStats.map((stat, i) => (
           <div key={stat.label} className="flex items-center gap-4">
@@ -53,7 +53,7 @@ export function HeroContent({ heroStats }: { heroStats: { value: string; label: 
             </div>
           </div>
         ))}
-      </motion.div>
+      </motion.div> */}
     </motion.div>
   );
 }
