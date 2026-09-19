@@ -9,8 +9,19 @@ const MIN_LOADER_TIME = 500;
 export default function PageLoader() {
   const pathname = usePathname();
 
-  const [showIntroLoader, setShowIntroLoader] = useState(false);
-  const [showNavigationLoader, setShowNavigationLoader] = useState(false);
+  /*
+   * IMPORTANT:
+   *
+   * Start the intro loader as TRUE.
+   *
+   * This prevents the homepage from appearing for a moment
+   * before React hydrates.
+   */
+  const [showIntroLoader, setShowIntroLoader] = useState(true);
+
+  const [showNavigationLoader, setShowNavigationLoader] =
+    useState(false);
+
   const [progress, setProgress] = useState(0);
 
   const previousPath = useRef(pathname);
@@ -28,16 +39,15 @@ export default function PageLoader() {
   const navigationStartedAt = useRef<number | null>(null);
 
   /* =====================================================
-     PRIMARY MP4 LOADER
+     INITIAL LOADER CONTROL
 
-     Runs ONLY once when PageLoader is first mounted.
+     This runs only once.
 
-     Shows MP4 only when:
-     - entering the homepage directly
-     - refreshing the homepage
+     MP4 is allowed only when the actual initial URL
+     is the homepage.
 
-     It will NOT show when navigating internally
-     to the homepage.
+     Direct loading of a blog/field page will immediately
+     hide the intro loader.
   ===================================================== */
 
   useEffect(() => {
@@ -46,28 +56,28 @@ export default function PageLoader() {
     }
 
     /*
-     * This is intentionally an empty dependency array.
+     * The PageLoader is mounted globally.
      *
-     * PageLoader mounts once for the application.
-     * Internal route changes do not execute this effect again.
+     * Check the actual browser URL rather than pathname
+     * changes so internal navigation cannot trigger MP4.
      */
-
-    if (pathname !== "/") {
-      return;
-    }
+    const isHomepage =
+      window.location.pathname === "/";
 
     const navigation = performance.getEntriesByType(
       "navigation"
     )[0] as PerformanceNavigationTiming | undefined;
 
-    const isInitialNavigation =
+    const isInitialDocumentLoad =
       navigation?.type === "navigate" ||
       navigation?.type === "reload";
 
-    if (isInitialNavigation) {
-      setShowIntroLoader(true);
+    /*
+     * Only keep the MP4 for an actual initial homepage load.
+     */
+    if (!isHomepage || !isInitialDocumentLoad) {
+      setShowIntroLoader(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* =====================================================
@@ -80,41 +90,25 @@ export default function PageLoader() {
 
   /* =====================================================
      ROUTE CHANGE
-
-     When Next.js changes the pathname, the navigation
-     has completed.
   ===================================================== */
 
   useEffect(() => {
-    /*
-     * Nothing changed.
-     */
     if (previousPath.current === pathname) {
       return;
     }
 
     previousPath.current = pathname;
 
-    /*
-     * Stop simulated progress.
-     */
     if (progressInterval.current) {
       clearInterval(progressInterval.current);
       progressInterval.current = null;
     }
 
-    /*
-     * Cancel safety timeout.
-     */
     if (navigationTimeout.current) {
       clearTimeout(navigationTimeout.current);
       navigationTimeout.current = null;
     }
 
-    /*
-     * Make sure the loader stays visible long enough
-     * to actually be perceived.
-     */
     const startedAt =
       navigationStartedAt.current ?? Date.now();
 
@@ -126,14 +120,8 @@ export default function PageLoader() {
     );
 
     finishTimeout.current = setTimeout(() => {
-      /*
-       * Complete progress.
-       */
       setProgress(100);
 
-      /*
-       * Give the user a moment to see 100%.
-       */
       setTimeout(() => {
         setShowNavigationLoader(false);
         setProgress(0);
@@ -149,7 +137,7 @@ export default function PageLoader() {
   }, [pathname]);
 
   /* =====================================================
-     INTERNAL NAVIGATION DETECTION
+     INTERNAL NAVIGATION
   ===================================================== */
 
   useEffect(() => {
@@ -159,7 +147,7 @@ export default function PageLoader() {
 
     const handleClick = (event: MouseEvent) => {
       /*
-       * Only normal left-clicks.
+       * Normal left click only.
        */
       if (
         event.button !== 0 ||
@@ -171,9 +159,6 @@ export default function PageLoader() {
         return;
       }
 
-      /*
-       * Find nearest anchor.
-       */
       const target = event.target as HTMLElement | null;
 
       const link = target?.closest("a");
@@ -205,23 +190,19 @@ export default function PageLoader() {
       }
 
       /*
-       * Ignore hash links.
+       * Ignore anchors.
        */
       if (href.startsWith("#")) {
         return;
       }
 
       /*
-       * Ignore email links.
+       * Ignore mail / telephone.
        */
-      if (href.startsWith("mailto:")) {
-        return;
-      }
-
-      /*
-       * Ignore telephone links.
-       */
-      if (href.startsWith("tel:")) {
+      if (
+        href.startsWith("mailto:") ||
+        href.startsWith("tel:")
+      ) {
         return;
       }
 
@@ -234,14 +215,14 @@ export default function PageLoader() {
       }
 
       /*
-       * Ignore external websites.
+       * Ignore external links.
        */
       if (url.origin !== window.location.origin) {
         return;
       }
 
       /*
-       * Ignore same-page navigation.
+       * Ignore same-page links.
        */
       if (
         url.pathname === window.location.pathname &&
@@ -252,8 +233,9 @@ export default function PageLoader() {
       }
 
       /*
-       * Clear previous navigation state.
+       * Clear existing navigation state.
        */
+
       if (progressInterval.current) {
         clearInterval(progressInterval.current);
       }
@@ -269,16 +251,13 @@ export default function PageLoader() {
       navigationStartedAt.current = Date.now();
 
       /*
-       * Start full-screen navigation loader.
+       * Start full-screen secondary loader.
        */
       setShowNavigationLoader(true);
       setProgress(5);
 
       /*
-       * Gradually approach 90%.
-       *
-       * This is an estimated progress indicator.
-       * 100% only happens after pathname changes.
+       * Gradually move toward 90%.
        */
       progressInterval.current = setInterval(() => {
         setProgress((current) => {
@@ -297,9 +276,6 @@ export default function PageLoader() {
 
       /*
        * Safety fallback.
-       *
-       * Prevents the loader from staying forever if
-       * something prevents the navigation from completing.
        */
       navigationTimeout.current = setTimeout(() => {
         if (progressInterval.current) {
@@ -319,9 +295,6 @@ export default function PageLoader() {
 
     /*
      * Capture phase.
-     *
-     * This catches Next.js <Link> clicks before the
-     * navigation handler executes.
      */
     document.addEventListener(
       "click",
@@ -351,7 +324,7 @@ export default function PageLoader() {
   }, []);
 
   /* =====================================================
-     FINAL CLEANUP
+     CLEANUP
   ===================================================== */
 
   useEffect(() => {
@@ -387,7 +360,7 @@ export default function PageLoader() {
           aria-label="Loading CyberIncidents"
         >
           <video
-            src="/preloader1.mp4"
+            src="/preloader3.mp4"
             autoPlay
             muted
             playsInline
@@ -409,13 +382,9 @@ export default function PageLoader() {
           aria-label="Loading page"
         >
           <div className="w-[min(420px,80vw)] text-center">
-            {/* Loading text */}
-
             <div className="mb-5 font-mono text-xs font-bold uppercase tracking-[0.3em] text-slate-700 dark:text-gray-300">
               Loading
             </div>
-
-            {/* Progress track */}
 
             <div className="h-[4px] w-full overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
               <div
@@ -426,8 +395,6 @@ export default function PageLoader() {
                     "linear-gradient(90deg, #0284c7, #38bdf8)",
                 }}
               >
-                {/* Moving highlight */}
-
                 <div
                   className="absolute right-0 top-0 h-full w-16"
                   style={{
@@ -440,13 +407,9 @@ export default function PageLoader() {
               </div>
             </div>
 
-            {/* Percentage */}
-
             <div className="mt-4 font-mono text-sm font-bold tracking-widest text-[#0284c7] dark:text-[#38bdf8]">
               {Math.round(progress)}%
             </div>
-
-            {/* Status text */}
 
             <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-400">
               Establishing secure connection

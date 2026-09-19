@@ -20,20 +20,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const latestBlogs = await getLatestBlogs(3);
 
-  const heroStats = [
-    {
-      value: "1,500+",
-      label: "DEEP-DIVE REPORTS",
-    },
-    {
-      value: "24/7",
-      label: "DISCLOSURE RADAR",
-    },
-    {
-      value: "100%",
-      label: "PEER-REVIEWED FORENSICS",
-    },
-  ];
+  
 
   return (
     <main className="min-h-screen bg-white dark:bg-[#05070a]">
@@ -111,7 +98,7 @@ export default async function Home() {
         ================================================= */}
 
         <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.25fr_0.75fr] lg:items-center lg:gap-16">
-          <HeroContent heroStats={heroStats} />
+          <HeroContent />
 
           <RadarCard />
         </div>
