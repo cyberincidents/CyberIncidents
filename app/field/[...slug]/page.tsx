@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import BlogCard from "@/components/blog/BlogCard";
 import LatestBlogs from "@/components/blog/LatestBlogs";
@@ -164,17 +164,12 @@ export async function generateMetadata({
    */
   if (
     slug.length === 1 &&
-    field.parentId
+    field.parentId &&
+    field.parent
   ) {
-    return {
-      title: "Field Not Found",
-      description:
-        "The requested CyberIncidents cybersecurity field could not be found.",
-      robots: {
-        index: false,
-        follow: false,
-      },
-    };
+    permanentRedirect(
+      `/field/${field.parent.slug}/${field.slug}`
+    );
   }
 
   /*
@@ -336,13 +331,12 @@ export default async function FieldPage({
 
   if (
     slug.length === 1 &&
-    field.parentId
+    field.parentId &&
+    field.parent
   ) {
-    /*
-     * A subcategory cannot be accessed
-     * without its parent in the URL.
-     */
-    notFound();
+    permanentRedirect(
+      `/field/${field.parent.slug}/${field.slug}`
+    );
   }
 
   /*

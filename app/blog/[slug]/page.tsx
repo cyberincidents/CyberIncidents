@@ -67,6 +67,19 @@ function getPrimaryImage(blog: {
   );
 }
 
+function getFieldUrl(field: {
+  slug: string;
+  parent?: {
+    slug: string;
+  } | null;
+}) {
+  if (field.parent) {
+    return `/field/${field.parent.slug}/${field.slug}`;
+  }
+
+  return `/field/${field.slug}`;
+}
+
 /* =====================================================
    SEO DESCRIPTION
 ===================================================== */
@@ -411,22 +424,39 @@ export default async function BlogPage({
     },
   ];
 
-  if (blogField) {
-    breadcrumbItems.push({
-      "@type": "ListItem",
-      position: 2,
-      name: blogField.name,
-      item: `${SITE_URL}/field/${blogField.slug}`,
-    });
-  }
+  if (blogField?.parent) {
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    position: 2,
+    name: blogField.parent.name,
+    item: `${SITE_URL}/field/${blogField.parent.slug}`,
+  });
 
   breadcrumbItems.push({
     "@type": "ListItem",
-    position:
-      blogField ? 3 : 2,
-    name: blog.title,
-    item: canonicalUrl,
+    position: 3,
+    name: blogField.name,
+    item: `${SITE_URL}/field/${blogField.parent.slug}/${blogField.slug}`,
   });
+} else if (blogField) {
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    position: 2,
+    name: blogField.name,
+    item: `${SITE_URL}/field/${blogField.slug}`,
+  });
+}
+
+  breadcrumbItems.push({
+  "@type": "ListItem",
+  position: blogField?.parent
+    ? 4
+    : blogField
+      ? 3
+      : 2,
+  name: blog.title,
+  item: canonicalUrl,
+});
 
   const breadcrumbSchema = {
     "@context": "https://schema.org",
@@ -499,20 +529,35 @@ export default async function BlogPage({
               /
             </span>
 
-            {blogField && (
-              <>
-                <Link
-                  href={`/field/${blogField.slug}`}
-                  className="transition-colors hover:text-[#00a8ff]"
-                >
-                  {blogField.name}
-                </Link>
+           {blogField && (
+  <>
+    {blogField.parent && (
+      <>
+        <Link
+          href={`/field/${blogField.parent.slug}`}
+          className="transition-colors hover:text-[#00a8ff]"
+        >
+          {blogField.parent.name}
+        </Link>
 
-                <span aria-hidden="true">
-                  /
-                </span>
-              </>
-            )}
+        <span aria-hidden="true">
+          /
+        </span>
+      </>
+    )}
+
+    <Link
+      href={getFieldUrl(blogField)}
+      className="transition-colors hover:text-[#00a8ff]"
+    >
+      {blogField.name}
+    </Link>
+
+    <span aria-hidden="true">
+      /
+    </span>
+  </>
+)}
 
             <span
               aria-current="page"
@@ -636,7 +681,7 @@ export default async function BlogPage({
 
             {blogField ? (
               <Link
-                href={`/field/${blogField.slug}`}
+                href={getFieldUrl(blogField)}
                 className="font-semibold text-gray-800 transition hover:text-[#00a8ff] dark:text-[#00d9ff]"
               >
                 {blogField.name}

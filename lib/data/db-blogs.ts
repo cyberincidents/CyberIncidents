@@ -218,12 +218,16 @@ export async function getBlogBySlug(
       status: "PUBLISHED",
     },
 
+   include: {
+  fields: {
     include: {
-      fields: {
+      field: {
         include: {
-          field: true,
+          parent: true,
         },
       },
+    },
+  },
 
       tags: {
         include: {
