@@ -176,14 +176,14 @@ export default function AboutUsPage() {
 
                 {/* Sub-badges beneath photo */}
                 <div className="mt-3 flex w-full max-w-[260px] flex-col gap-1.5 sm:max-w-[280px]">
-                  <div className="flex items-center gap-2 rounded-lg border border-slate-300/80 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
-                    <GraduationCap className="h-4 w-4 shrink-0 text-[#00a8ff]" />
-                    <span>MBA in Operations Management</span>
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-300/80 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                    <Briefcase className="h-4 w-4 shrink-0 text-[#00a8ff]" />
+                    <span>Cybersecurity Analyst, Threat Hunter, SOC, SIEM, EDR, Threat Detection & Incident Response</span>
                   </div>
 
-                  <div className="flex items-center gap-2 rounded-lg border border-slate-300/80 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
-                    <Briefcase className="h-4 w-4 shrink-0 text-[#00a8ff]" />
-                    <span>Fintech, Banking, Healthcare & MSSP</span>
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-300/80 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                    <GraduationCap className="h-4 w-4 shrink-0 text-[#00a8ff]" />
+                    <span>MBA in Operations Management</span>
                   </div>
                 </div>
               </div>
@@ -386,6 +386,11 @@ export default function AboutUsPage() {
 
                 {/* Sub-badges beneath photo */}
                 <div className="mt-3 flex w-full max-w-[260px] flex-col gap-1.5 sm:max-w-[280px]">
+                <div className="flex items-center gap-2 rounded-lg border border-slate-300/80 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
+                  <Briefcase className="h-4 w-4 shrink-0 text-[#00a8ff]" />
+                  <span>Cybersecurity Analyst, SOC, DFIR, Detection Engineer</span>
+                  </div>
+
                   <div className="flex items-center gap-2 rounded-lg border border-slate-300/80 bg-slate-100 px-3 py-2 text-xs font-bold text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200">
                     <GraduationCap className="h-4 w-4 shrink-0 text-[#00a8ff]" />
                     <span>MSc Computer Forensics & Cybersecurity</span>
