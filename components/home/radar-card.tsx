@@ -186,8 +186,7 @@ export function RadarCard() {
               type="button"
               onClick={() => setIsFullscreen(false)}
               aria-label="Close fullscreen radar"
-              className="absolute right-5 top-5 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-xl backdrop-blur-md transition hover:border-cyan-400/60 hover:bg-black/90 hover:text-cyan-300"
-            >
+className="absolute left-5 top-5 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white shadow-xl backdrop-blur-md transition hover:border-cyan-400/60 hover:bg-black/90 hover:text-cyan-300"            >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
