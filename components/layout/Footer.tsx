@@ -83,21 +83,21 @@ export default function Footer() {
                 </Link>
               </li>
 
-              <li>
+              {/* <li>
                 <Link
                   href="/search"
                   className="text-sm text-white/50 transition-colors hover:text-white"
                 >
                   Search
                 </Link>
-              </li>
+              </li> */}
 
               <li>
                 <Link
-                  href="/login"
+                  href="/about-us"
                   className="text-sm text-white/50 transition-colors hover:text-white"
                 >
-                  Login
+                  About
                 </Link>
               </li>
 
