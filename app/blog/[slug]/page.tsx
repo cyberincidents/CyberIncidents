@@ -606,7 +606,7 @@ export default async function BlogPage({
           <div className="mt-7 flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-white/40">
 
             <span className="font-medium text-gray-600 dark:text-white/80">
-              CyberIncidents Team
+              {blog.author || "CyberIncidents Team"}
             </span>
 
             <span className="h-1 w-1 shrink-0 rounded-full bg-gray-300 dark:bg-white/20" />
@@ -635,35 +635,35 @@ export default async function BlogPage({
       </section>
 
       {/* =================================================
-          PRIMARY IMAGE
-      ================================================= */}
+    PRIMARY IMAGE / HERO
+================================================= */}
 
-      {primaryImage?.url && (
-        <section className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-12">
+{primaryImage?.url && (
+  <section className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+    <figure className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl shadow-black/5 dark:border-white/10 dark:bg-[#090d14] dark:shadow-black/20">
+      <Image
+        src={primaryImage.url}
+        alt={
+          primaryImage.altText ??
+          blog.title
+        }
+        width={1600}
+        height={900}
+        sizes="(max-width: 1024px) 100vw, 1024px"
+        className="h-auto max-h-[680px] w-full object-cover transition-transform duration-700 group-hover:scale-[1.01]"
+        priority
+      />
 
-          <figure className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5">
-
-            <Image
-              src={primaryImage.url}
-              alt={
-                primaryImage.altText ??
-                blog.title
-              }
-              width={1200}
-              height={675}
-              className="h-auto max-h-[600px] w-full object-cover"
-            />
-
-          </figure>
-
-        </section>
-      )}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+    </figure>
+  </section>
+)}
 
       {/* =================================================
           ARTICLE CONTENT
       ================================================= */}
 
-      <section className="mx-auto max-w-3xl px-5 pb-20 sm:px-8">
+      <section className="mx-auto max-w-5xl px-5 pb-20 sm:px-8 lg:px-10">
 
         <ArticleContent
           content={blog.content}

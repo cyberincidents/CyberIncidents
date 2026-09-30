@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import ImageUploader from "@/components/admin/ImageUploader";
-
+import RichTextEditor from "@/components/admin/RichTextEditor";
 /* =====================================================
    TYPES
 ===================================================== */
@@ -37,6 +37,7 @@ type Blog = {
   title: string;
   slug: string;
   excerpt: string | null;
+  author: string;
   content: string;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   access: "FREE" | "PAID";
@@ -190,6 +191,10 @@ export default function BlogEditForm({
 
   const [excerpt, setExcerpt] = useState(
     blog.excerpt ?? ""
+  );
+
+  const [author, setAuthor] = useState(
+    blog.author || "CyberIncidents Team"
   );
 
   const [blocks, setBlocks] =
@@ -372,6 +377,28 @@ export default function BlogEditForm({
     ]);
   }
 
+  function addTextBlockAfter(index: number) {
+    setBlocks((current) => {
+      const next = [...current];
+      next.splice(index + 1, 0, {
+        type: "text",
+        text: "",
+      });
+      return next;
+    });
+  }
+
+  function addImageBlockAfter(index: number) {
+    setBlocks((current) => {
+      const next = [...current];
+      next.splice(index + 1, 0, {
+        type: "image",
+        image: null,
+      });
+      return next;
+    });
+  }
+
   function removeBlock(
     index: number
   ) {
@@ -443,6 +470,15 @@ export default function BlogEditForm({
       setMessage(
         "Slug is required."
       );
+      return;
+    }
+
+    /* -----------------------------------------------
+       Validate author
+    ------------------------------------------------ */
+
+    if (!author.trim()) {
+      setMessage("Author name is required.");
       return;
     }
 
@@ -623,6 +659,9 @@ export default function BlogEditForm({
               title:
                 title.trim(),
 
+              author:
+                author.trim(),
+
               slug:
                 slug.trim(),
 
@@ -766,6 +805,23 @@ export default function BlogEditForm({
               placeholder="Short blog description"
             />
           </div>
+
+          {/* Author */}
+
+          <div>
+            <label className="mb-2 block text-sm text-slate-300">
+              Author Name
+            </label>
+
+            <input
+              value={author}
+              onChange={(event) =>
+                setAuthor(event.target.value)
+              }
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              placeholder="Author name"
+            />
+          </div>
         </div>
       </section>
 
@@ -832,27 +888,6 @@ export default function BlogEditForm({
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={
-                addTextBlock
-              }
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-800"
-            >
-              + Text
-            </button>
-
-            <button
-              type="button"
-              onClick={
-                addImageBlock
-              }
-              className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
-            >
-              + Image
-            </button>
-          </div>
         </div>
 
         <div className="space-y-4">
@@ -929,21 +964,14 @@ export default function BlogEditForm({
 
                 {block.type ===
                   "text" && (
-                  <textarea
-                    value={
-                      block.text
-                    }
-                    onChange={(
-                      event
-                    ) =>
+                  <RichTextEditor
+                    value={block.text}
+                    onChange={(value) =>
                       updateTextBlock(
                         index,
-                        event.target
-                          .value
+                        value
                       )
                     }
-                    rows={7}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
                     placeholder="Write your article section..."
                   />
                 )}
@@ -994,10 +1022,52 @@ export default function BlogEditForm({
                     )}
                   </div>
                 )}
+
+                {/* Add controls for this block */}
+
+                <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-800 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => addTextBlockAfter(index)}
+                    className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-white transition hover:border-cyan-400/50 hover:bg-slate-800"
+                  >
+                    + Text
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => addImageBlockAfter(index)}
+                    className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                  >
+                    + Image
+                  </button>
+                </div>
               </div>
             )
           )}
         </div>
+
+        {/* Add controls only when there are no blocks */}
+
+{blocks.length === 0 && (
+  <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-slate-800 pt-5">
+    <button
+      type="button"
+      onClick={addTextBlock}
+      className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-white transition hover:border-cyan-400/50 hover:bg-slate-800"
+    >
+      + Text
+    </button>
+
+    <button
+      type="button"
+      onClick={addImageBlock}
+      className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+    >
+      + Image
+    </button>
+  </div>
+)}
 
         {blocks.length ===
           0 && (
@@ -1146,79 +1216,7 @@ export default function BlogEditForm({
             }
           )}
 
-          {/* =================================================
-              STANDALONE / LEGACY FIELDS
-          ================================================= */}
-
-          {/* {standaloneFields.length >
-            0 && (
-            <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[#030817]">
-              <div className="flex items-center gap-4 px-6 py-5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-400/30 bg-cyan-400/10 font-mono text-sm font-bold text-cyan-400">
-                  --
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Other Fields
-                  </h3>
-
-                  <p className="mt-0.5 text-sm text-slate-500">
-                    {standaloneFields.length}{" "}
-                    {standaloneFields.length ===
-                    1
-                      ? "field"
-                      : "fields"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-2.5 px-6 pb-6 sm:grid-cols-2 lg:grid-cols-3">
-                {standaloneFields.map(
-                  (field) => {
-                    const selected =
-                      isFieldSelected(
-                        field.id
-                      );
-
-                    return (
-                      <button
-                        key={field.id}
-                        type="button"
-                        onClick={() =>
-                          toggleField(
-                            field.id
-                          )
-                        }
-                        aria-pressed={
-                          selected
-                        }
-                        className={`group flex min-h-[56px] items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all duration-200 ${
-                          selected
-                            ? "border-cyan-400 bg-cyan-400/10 text-cyan-300"
-                            : "border-slate-700 bg-[#10192d] text-slate-300 hover:border-slate-500 hover:bg-[#142038] hover:text-white"
-                        }`}
-                      >
-                        <span
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-                            selected
-                              ? "border-cyan-400 bg-cyan-400 text-[11px] font-bold text-slate-950"
-                              : "border-slate-600 text-transparent group-hover:border-slate-400"
-                          }`}
-                        >
-                          ✓
-                        </span>
-
-                        <span className="min-w-0 text-sm font-medium">
-                          {field.name}
-                        </span>
-                      </button>
-                    );
-                  }
-                )}
-              </div>
-            </div>
-          )} */}
+          
         </div>
 
         {/* =================================================

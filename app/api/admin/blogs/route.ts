@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       title,
       slug,
       excerpt,
+      author,
       content,
       access,
       status,
@@ -118,6 +119,16 @@ export async function POST(request: Request) {
         {
           success: false,
           message: "Content is required",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (typeof author !== "string" || !author.trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Author name is required",
         },
         { status: 400 }
       );
@@ -325,7 +336,7 @@ export async function POST(request: Request) {
 
         // All articles are published by the
         // CyberIncidents team.
-        author: "CyberIncidents Team",
+        author: author.trim(),
 
         access:
           access === "PAID"

@@ -913,84 +913,92 @@ export default function Navbar() {
 
             {/* FIELDS */}
 
-            {fields.map((field) => (
-              <div
-                key={field.slug}
-                className="relative z-[200] flex shrink-0 items-center justify-center"
+            {fields.map((field) => {
+  const isCyberNews = field.slug === "cyber-news";
+
+  if (isCyberNews) {
+    return (
+      <Link
+        key={field.slug}
+        href="/field/cyber-news"
+        onClick={closeMenus}
+        className="flex min-w-[105px] shrink-0 items-center justify-center px-1 text-center text-[10px] font-bold uppercase leading-[1.15] tracking-wide text-zinc-300 transition-colors hover:text-[#00a8ff] xl:min-w-[120px] xl:text-[11px] 2xl:min-w-[135px] 2xl:text-xs"
+      >
+        <span className="whitespace-normal">
+          {field.name}
+        </span>
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      key={field.slug}
+      className="relative z-[200] flex shrink-0 items-center justify-center"
+    >
+      <button
+        type="button"
+        onClick={() => toggleCategory(field.slug)}
+        aria-expanded={openCategory === field.slug}
+        aria-haspopup="menu"
+        className="flex w-[105px] cursor-pointer items-center justify-center gap-1 px-1 text-center text-[10px] font-bold uppercase leading-[1.15] tracking-wide text-zinc-300 transition-colors hover:text-[#00a8ff] xl:w-[120px] xl:text-[11px] 2xl:w-[135px] 2xl:text-xs"
+      >
+        <span className="whitespace-normal">
+          {field.name}
+        </span>
+
+        <svg
+          width="8"
+          height="8"
+          viewBox="0 0 12 12"
+          fill="none"
+          className={`mt-0.5 shrink-0 transition-transform duration-200 ${
+            openCategory === field.slug ? "rotate-180" : ""
+          }`}
+        >
+          <path
+            d="M2.5 4.5L6 8L9.5 4.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {/* FIELD DROPDOWN */}
+      {openCategory === field.slug && (
+        <div
+          role="menu"
+          className="absolute left-1/2 top-[calc(100%+14px)] z-[9999] w-80 -translate-x-1/2 overflow-hidden rounded-xl border border-white/15 bg-[#0b0f12] p-2 shadow-2xl backdrop-blur-md"
+        >
+          <div
+            className="max-h-[min(420px,calc(100vh-180px))] overflow-y-auto overscroll-contain touch-pan-y pr-1"
+            onWheel={(event) => {
+              event.stopPropagation();
+            }}
+          >
+            {field.subcategories.map((subcategory) => (
+              <Link
+                key={subcategory.id}
+                href={`/field/${field.slug}/${subcategory.slug}`}
+                onClick={closeMenus}
+                role="menuitem"
+                className="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100"
               >
-                <button
-                  type="button"
-                  onClick={() =>
-                    toggleCategory(field.slug)
-                  }
-                  aria-expanded={
-                    openCategory === field.slug
-                  }
-                  aria-haspopup="menu"
-                  className="flex w-[105px] cursor-pointer items-center justify-center gap-1 px-1 text-center text-[10px] font-bold uppercase leading-[1.15] tracking-wide text-zinc-300 transition-colors hover:text-[#00a8ff] xl:w-[120px] xl:text-[11px] 2xl:w-[135px] 2xl:text-xs"
-                >
-                  <span className="whitespace-normal">
-                    {field.name}
-                  </span>
+                <span>{subcategory.name}</span>
 
-                  <svg
-                    width="8"
-                    height="8"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    className={`mt-0.5 shrink-0 transition-transform duration-200 ${
-                      openCategory === field.slug
-                        ? "rotate-180"
-                        : ""
-                    }`}
-                  >
-                    <path
-                      d="M2.5 4.5L6 8L9.5 4.5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-
-                {/* FIELD DROPDOWN */}
-
-                {openCategory === field.slug && (
-                  <div
-                    role="menu"
-                    className="absolute left-1/2 top-[calc(100%+14px)] z-[9999] w-80 -translate-x-1/2 overflow-hidden rounded-xl border border-white/15 bg-[#0b0f12] p-2 shadow-2xl backdrop-blur-md"
-                  >
-                    <div
-                      className="max-h-[min(420px,calc(100vh-180px))] overflow-y-auto overscroll-contain touch-pan-y pr-1"
-                      onWheel={(event) => {
-                        event.stopPropagation();
-                      }}
-                    >
-                      {field.subcategories.map(
-                        (subcategory) => (
-                          <Link
-                            key={subcategory.id}
-                            href={`/field/${field.slug}/${subcategory.slug}`}
-                            onClick={closeMenus}
-                            role="menuitem"
-                            className="group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100"
-                          >
-                            <span>
-                              {subcategory.name}
-                            </span>
-
-                            <span className="translate-x-[-4px] text-[#00a8ff] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100">
-                              →
-                            </span>
-                          </Link>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                <span className="translate-x-[-4px] text-[#00a8ff] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100">
+                  →
+                </span>
+              </Link>
             ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+})}
 
             {/* ABOUT US */}
 
@@ -1104,78 +1112,87 @@ export default function Navbar() {
 
           {/* FIELDS */}
 
-          {fields.map((field) => (
-            <div
-              key={field.slug}
-              className="border-b border-white/5"
+          {fields.map((field) => {
+  const isCyberNews = field.slug === "cyber-news";
+
+  if (isCyberNews) {
+    return (
+      <Link
+        key={field.slug}
+        href="/field/cyber-news"
+        onClick={closeMenus}
+        className="block border-b border-white/5 py-4 text-sm font-bold uppercase tracking-wide text-zinc-300 transition-colors hover:text-[#00a8ff]"
+      >
+        {field.name}
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      key={field.slug}
+      className="border-b border-white/5"
+    >
+      <button
+        type="button"
+        onClick={() => toggleCategory(field.slug)}
+        aria-expanded={openCategory === field.slug}
+        aria-haspopup="menu"
+        className="flex w-full cursor-pointer items-center justify-between py-4 text-left text-sm font-bold uppercase tracking-wide text-zinc-300"
+      >
+        <span>{field.name}</span>
+
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          className={`transition-transform duration-200 ${
+            openCategory === field.slug ? "rotate-180" : ""
+          }`}
+        >
+          <path
+            d="M2.5 4.5L6 8L9.5 4.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {openCategory === field.slug && (
+        <div
+          role="menu"
+          className="max-h-[55vh] overflow-y-auto overscroll-contain pb-3 pl-3 pr-1 touch-pan-y"
+          onWheel={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <Link
+            href={`/field/${field.slug}`}
+            onClick={closeMenus}
+            className="mb-1 block rounded-lg bg-white/5 px-3 py-3 text-sm font-semibold text-[#00a8ff]"
+          >
+            View All {field.name}
+          </Link>
+
+          {field.subcategories.map((subcategory) => (
+            <Link
+              key={subcategory.id}
+              href={`/field/${field.slug}/${subcategory.slug}`}
+              onClick={closeMenus}
+              role="menuitem"
+              className="block w-full rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition-colors hover:bg-white/5 hover:text-[#00a8ff]"
             >
-              <button
-                type="button"
-                onClick={() =>
-                  toggleCategory(field.slug)
-                }
-                aria-expanded={
-                  openCategory === field.slug
-                }
-                aria-haspopup="menu"
-                className="flex w-full cursor-pointer items-center justify-between py-4 text-left text-sm font-bold uppercase tracking-wide text-zinc-300"
-              >
-                <span>{field.name}</span>
-
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  className={`transition-transform duration-200 ${
-                    openCategory === field.slug
-                      ? "rotate-180"
-                      : ""
-                  }`}
-                >
-                  <path
-                    d="M2.5 4.5L6 8L9.5 4.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-
-              {openCategory === field.slug && (
-                <div
-                  role="menu"
-                  className="max-h-[55vh] overflow-y-auto overscroll-contain pb-3 pl-3 pr-1 touch-pan-y"
-                  onWheel={(event) => {
-                    event.stopPropagation();
-                  }}
-                >
-                  <Link
-                    href={`/field/${field.slug}`}
-                    onClick={closeMenus}
-                    className="mb-1 block rounded-lg bg-white/5 px-3 py-3 text-sm font-semibold text-[#00a8ff]"
-                  >
-                    View All {field.name}
-                  </Link>
-
-                  {field.subcategories.map(
-                    (subcategory) => (
-                      <Link
-                        key={subcategory.id}
-                        href={`/field/${field.slug}/${subcategory.slug}`}
-                        onClick={closeMenus}
-                        role="menuitem"
-                        className="block w-full rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition-colors hover:bg-white/5 hover:text-[#00a8ff]"
-                      >
-                        {subcategory.name}
-                      </Link>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
+              {subcategory.name}
+            </Link>
           ))}
+        </div>
+      )}
+    </div>
+  );
+})}
 
           {/* ABOUT */}
 

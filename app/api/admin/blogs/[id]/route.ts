@@ -331,6 +331,11 @@ export async function PUT(
         ? body.excerpt.trim()
         : "";
 
+    const author =
+      typeof body.author === "string"
+        ? body.author.trim()
+        : "";
+
     const content =
       typeof body.content === "string"
         ? body.content
@@ -411,6 +416,18 @@ export async function PUT(
         {
           message:
             "Content is required",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!author) {
+      return NextResponse.json(
+        {
+          message:
+            "Author name is required",
         },
         {
           status: 400,
@@ -698,8 +715,7 @@ export async function PUT(
                 // the updated article content.
                 readTime,
 
-                author:
-                  "CyberIncidents Team",
+                author,
 
                 access,
                 status,

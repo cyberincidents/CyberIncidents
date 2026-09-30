@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import ImageUploader from "@/components/admin/ImageUploader";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 import {
   fields as navbarFields,
@@ -39,6 +40,7 @@ type Blog = {
   title: string;
   slug: string;
   excerpt: string | null;
+  author: string;
   content: string;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   access: "FREE" | "PAID";
@@ -164,6 +166,7 @@ export default function BlogEditForm({
     title: "",
     slug: "",
     excerpt: null,
+    author: "CyberIncidents Team",
     content: "",
     status: "DRAFT",
     access: "FREE",
@@ -260,6 +263,10 @@ export default function BlogEditForm({
 
   const [excerpt, setExcerpt] = useState(
     formBlog.excerpt ?? ""
+  );
+
+  const [author, setAuthor] = useState(
+    formBlog.author || "CyberIncidents Team"
   );
 
   const [blocks, setBlocks] =
@@ -386,6 +393,28 @@ export default function BlogEditForm({
     ]);
   }
 
+  function addTextBlockAfter(index: number) {
+    setBlocks((current) => {
+      const next = [...current];
+      next.splice(index + 1, 0, {
+        type: "text",
+        text: "",
+      });
+      return next;
+    });
+  }
+
+  function addImageBlockAfter(index: number) {
+    setBlocks((current) => {
+      const next = [...current];
+      next.splice(index + 1, 0, {
+        type: "image",
+        image: null,
+      });
+      return next;
+    });
+  }
+
   function removeBlock(index: number) {
     setBlocks((current) =>
       current.filter(
@@ -455,6 +484,15 @@ export default function BlogEditForm({
       setMessage(
         "Slug is required."
       );
+      return;
+    }
+
+    /* -----------------------------------------------
+       Validate author
+    ------------------------------------------------ */
+
+    if (!author.trim()) {
+      setMessage("Author name is required.");
       return;
     }
 
@@ -613,6 +651,7 @@ export default function BlogEditForm({
             title: title.trim(),
             slug: slug.trim(),
             excerpt: excerpt.trim(),
+            author: author.trim(),
             content:
               JSON.stringify(
                 contentBlocks
@@ -790,6 +829,23 @@ export default function BlogEditForm({
               placeholder="Short blog description"
             />
           </div>
+
+          {/* Author */}
+
+          <div>
+            <label className="mb-2 block text-sm text-slate-300">
+              Author Name
+            </label>
+
+            <input
+              value={author}
+              onChange={(event) =>
+                setAuthor(event.target.value)
+              }
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              placeholder="Author name"
+            />
+          </div>
         </div>
       </section>
 
@@ -854,23 +910,6 @@ export default function BlogEditForm({
             </p>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={addTextBlock}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-800"
-            >
-              + Text
-            </button>
-
-            <button
-              type="button"
-              onClick={addImageBlock}
-              className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-300"
-            >
-              + Image
-            </button>
-          </div>
         </div>
 
         <div className="space-y-4">
@@ -951,18 +990,14 @@ export default function BlogEditForm({
 
                 {block.type ===
                   "text" && (
-                  <textarea
-                    value={
-                      block.text
-                    }
-                    onChange={(event) =>
+                  <RichTextEditor
+                    value={block.text}
+                    onChange={(value) =>
                       updateTextBlock(
                         index,
-                        event.target.value
+                        value
                       )
                     }
-                    rows={7}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
                     placeholder="Write your article section..."
                   />
                 )}
@@ -1012,10 +1047,54 @@ export default function BlogEditForm({
                     )}
                   </div>
                 )}
+
+                {/* Add controls for this block */}
+
+                <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-800 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => addTextBlockAfter(index)}
+                    className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-white transition hover:border-cyan-400/50 hover:bg-slate-800"
+                  >
+                    + Text
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => addImageBlockAfter(index)}
+                    className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                  >
+                    + Image
+                  </button>
+                </div>
               </div>
             )
           )}
         </div>
+
+        {/* Add controls at the bottom of the Article Content box */}
+
+        {/* Add controls only when there are no blocks */}
+
+        {blocks.length === 0 && (
+          <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-slate-800 pt-5">
+            <button
+              type="button"
+              onClick={addTextBlock}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-white transition hover:border-cyan-400/50 hover:bg-slate-800"
+            >
+              + Text
+            </button>
+
+            <button
+              type="button"
+              onClick={addImageBlock}
+              className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+            >
+              + Image
+            </button>
+          </div>
+        )}
 
         {blocks.length === 0 && (
           <div className="rounded-xl border border-dashed border-slate-700 px-6 py-10 text-center text-sm text-slate-500">
