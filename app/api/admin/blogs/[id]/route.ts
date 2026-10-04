@@ -483,37 +483,91 @@ export async function PUT(
       );
     }
 
-    /* -----------------------------------------------
-       Validate fields
-    ------------------------------------------------ */
+   /* -----------------------------------------------
+   Validate cybersecurity fields
+------------------------------------------------ */
 
-    const fields =
-      await prisma.field.findMany({
-        where: {
-          id: {
-            in: fieldIds,
-          },
-        },
+const selectedFields = await prisma.field.findMany({
+  where: {
+    id: {
+      in: fieldIds,
+    },
+  },
+  select: {
+    id: true,
+    slug: true,
+    parentId: true,
+    parent: {
+      select: {
+        slug: true,
+      },
+    },
+  },
+});
 
-        select: {
-          id: true,
-        },
-      });
+/*
+ * Every submitted ID must exist.
+ */
+if (selectedFields.length !== fieldIds.length) {
+  return NextResponse.json(
+    {
+      message:
+        "One or more selected fields are invalid.",
+    },
+    { status: 400 }
+  );
+}
 
-    if (
-      fields.length !==
-      fieldIds.length
-    ) {
-      return NextResponse.json(
-        {
-          message:
-            "One or more selected fields are invalid",
-        },
-        {
-          status: 400,
-        }
+/*
+ * Allowed top-level fields.
+ *
+ * These are directly selectable.
+ */
+const allowedTopLevelSlugs = new Set([
+  "cyber-news",
+  "incident-investigation",
+  "security-defense",
+  "emerging-security",
+  "guides-learning",
+]);
+
+/*
+ * Threats & Attacks is the ONLY category
+ * that may use child fields.
+ *
+ * The parent itself is NOT selectable.
+ */
+const validFieldSelection = selectedFields.every(
+  (field) => {
+    /*
+     * Direct top-level field.
+     */
+    if (!field.parentId) {
+      return allowedTopLevelSlugs.has(
+        field.slug
       );
     }
+
+    /*
+     * Child field is valid only when its
+     * parent is Threats & Attacks.
+     */
+    return (
+      field.parent?.slug ===
+      "threats-attacks"
+    );
+  }
+);
+
+if (!validFieldSelection) {
+  return NextResponse.json(
+    {
+      message:
+        "One or more selected cybersecurity fields are not allowed.",
+    },
+    { status: 400 }
+  );
+}
 
     /* -----------------------------------------------
        Images

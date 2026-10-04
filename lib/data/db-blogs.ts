@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+
 import type {
   BlogAccess,
   BlogStatus,
@@ -64,37 +65,36 @@ export async function getBlogsByField(
 ===================================================== */
 
 /**
- * Get all published blogs belonging to any
- * subcategory of a parent category.
+ * Get all published blogs belonging to subcategories
+ * of the Threats & Attacks parent category.
+ *
+ * Threats & Attacks is the only field that supports
+ * child categories.
  *
  * Example:
+ * getBlogsByParentField("threats-attacks")
  *
- * getBlogsByParentField("security-defense")
+ * Returns blogs assigned to:
  *
- * Finds:
- *
- * Security & Defense
- * ├── SOC & Security Operations
- * ├── SIEM
- * ├── EDR & XDR
- * ├── Network Security
- * ├── Cloud Security
- * ├── Application Security
- * ├── Identity & Access Security
- * ├── Email Security
- * ├── Endpoint Security
- * ├── Detection Engineering
- * └── Security Monitoring
- *
- * Then returns blogs assigned to any of
- * those subcategories.
+ * Threats & Attacks
+ * ├── Phishing & Social Engineering
+ * ├── Ransomware
+ * ├── Malware & Trojans
+ * ├── DDoS Attacks
+ * ├── Web Attacks
+ * ├── Identity & Credential Attacks
+ * ├── Supply Chain Attacks
+ * ├── Insider Threats
+ * ├── Cloud Attacks
+ * └── Mobile & IoT Attacks
  */
 export async function getBlogsByParentField(
   slug: string
 ) {
-  /* -----------------------------------------------
-     Find the parent category
-  ------------------------------------------------ */
+  // Only Threats & Attacks has subcategories.
+  if (slug !== "threats-attacks") {
+    return [];
+  }
 
   const parent = await prisma.field.findUnique({
     where: {
@@ -116,27 +116,13 @@ export async function getBlogsByParentField(
     return [];
   }
 
-  /* -----------------------------------------------
-     Collect child field IDs
-  ------------------------------------------------ */
-
-  const childFieldIds =
-    parent.children.map(
-      (child) => child.id
-    );
-
-  /*
-   * If the category currently has no children,
-   * there are no descendant blogs to return.
-   */
+  const childFieldIds = parent.children.map(
+    (child) => child.id
+  );
 
   if (childFieldIds.length === 0) {
     return [];
   }
-
-  /* -----------------------------------------------
-     Find blogs assigned to ANY child field
-  ------------------------------------------------ */
 
   return prisma.blog.findMany({
     where: {
@@ -186,10 +172,10 @@ export async function getBlogsByParentField(
  *
  * This is important for the catch-all route:
  *
- * /field/security-defense/network-security
+ * /field/threats-attacks/ransomware
  *
- * The page needs to know that Network Security
- * belongs to Security & Defense.
+ * The page needs to know whether the current field
+ * belongs to a parent category.
  */
 export async function getFieldBySlug(
   slug: string
@@ -218,16 +204,16 @@ export async function getBlogBySlug(
       status: "PUBLISHED",
     },
 
-   include: {
-  fields: {
     include: {
-      field: {
+      fields: {
         include: {
-          parent: true,
+          field: {
+            include: {
+              parent: true,
+            },
+          },
         },
       },
-    },
-  },
 
       tags: {
         include: {
@@ -550,8 +536,7 @@ export async function getAdminBlogs(
   ------------------------------------------------ */
 
   if (search?.trim()) {
-    const searchTerm =
-      search.trim();
+    const searchTerm = search.trim();
 
     where.OR = [
       {
@@ -609,9 +594,7 @@ export async function getAdminBlogs(
      Featured filter
   ------------------------------------------------ */
 
-  if (
-    typeof featured === "boolean"
-  ) {
+  if (typeof featured === "boolean") {
     where.featured = featured;
   }
 
@@ -679,9 +662,7 @@ export async function getBlogViewCounts(
       },
     });
 
-  return results.reduce<
-    Record<string, number>
-  >(
+  return results.reduce<Record<string, number>>(
     (counts, result) => {
       counts[result.blogId] =
         result._count.blogId;

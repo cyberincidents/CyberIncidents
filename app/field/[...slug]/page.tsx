@@ -409,6 +409,9 @@ export async function generateMetadata({
    * Canonical URL.
 
    */
+  const showTopics =
+  field.slug === "threats-attacks";
+
 
   const canonicalUrl =
 
@@ -797,18 +800,13 @@ export default async function FieldPage({
 
 
 
-  const blogs = isParentCategory
-
+  const blogs =
+  isParentCategory && showTopics
     ? await getBlogsByParentField(
-
         field.slug
-
       )
-
     : await getBlogsByField(
-
         field.slug
-
       );
 
 

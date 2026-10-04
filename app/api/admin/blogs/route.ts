@@ -188,56 +188,125 @@ export async function POST(request: Request) {
       );
     }
 
-    // --------------------------------------------------
-    // Clean and validate fields
-    // --------------------------------------------------
+// --------------------------------------------------
+// Clean and validate cybersecurity fields
+// --------------------------------------------------
 
-    const uniqueFieldIds = Array.from(
-      new Set(
-        fieldIds.filter(
-          (fieldId: unknown): fieldId is string =>
-            typeof fieldId === "string" &&
-            fieldId.trim().length > 0
-        )
-      )
-    );
+const uniqueFieldIds = Array.from(
+  new Set(
+    fieldIds.filter(
+      (fieldId: unknown): fieldId is string =>
+        typeof fieldId === "string" &&
+        fieldId.trim().length > 0
+    )
+  )
+);
 
-    if (uniqueFieldIds.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "At least one valid field is required",
-        },
-        { status: 400 }
-      );
-    }
+if (uniqueFieldIds.length === 0) {
+  return NextResponse.json(
+    {
+      success: false,
+      message:
+        "At least one valid field is required",
+    },
+    { status: 400 }
+  );
+}
 
-    const existingFields =
-      await prisma.field.findMany({
-        where: {
-          id: {
-            in: uniqueFieldIds,
-          },
-        },
+/*
+ * Get the selected fields together with their
+ * parent information.
+ */
+const selectedFields =
+  await prisma.field.findMany({
+    where: {
+      id: {
+        in: uniqueFieldIds,
+      },
+    },
+
+    select: {
+      id: true,
+      slug: true,
+      parentId: true,
+
+      parent: {
         select: {
-          id: true,
+          slug: true,
         },
-      });
+      },
+    },
+  });
 
-    if (
-      existingFields.length !==
-      uniqueFieldIds.length
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "One or more selected fields do not exist",
-        },
-        { status: 400 }
+/*
+ * Make sure every submitted field actually exists.
+ */
+if (
+  selectedFields.length !==
+  uniqueFieldIds.length
+) {
+  return NextResponse.json(
+    {
+      success: false,
+      message:
+        "One or more selected fields do not exist",
+    },
+    { status: 400 }
+  );
+}
+
+/*
+ * These five fields can be selected directly.
+ */
+const allowedTopLevelSlugs = new Set([
+  "cyber-news",
+  "incident-investigation",
+  "security-defense",
+  "emerging-security",
+  "guides-learning",
+]);
+
+/*
+ * Validate the complete field hierarchy.
+ *
+ * Threats & Attacks itself is NOT selectable.
+ * Only its children are selectable.
+ */
+const validFieldSelection =
+  selectedFields.every(
+    (field) => {
+      /*
+       * Top-level field.
+       */
+      if (!field.parentId) {
+        return allowedTopLevelSlugs.has(
+          field.slug
+        );
+      }
+
+      /*
+       * Child field.
+       *
+       * Children are allowed only when their
+       * parent is Threats & Attacks.
+       */
+      return (
+        field.parent?.slug ===
+        "threats-attacks"
       );
     }
+  );
+
+if (!validFieldSelection) {
+  return NextResponse.json(
+    {
+      success: false,
+      message:
+        "One or more selected cybersecurity fields are not allowed",
+    },
+    { status: 400 }
+  );
+}
 
     // --------------------------------------------------
     // Clean images
