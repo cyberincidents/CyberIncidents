@@ -8,7 +8,7 @@ const SITE_URL = (
 
 const FROM_EMAIL =
   process.env.NOTIFICATION_FROM_EMAIL ||
-  "CyberIncidents <onboarding@resend.dev>";
+  "CyberIncidents <notifications@cyberincidents.in>";
 
 function getResend() {
   const apiKey = process.env.RESEND_API_KEY;

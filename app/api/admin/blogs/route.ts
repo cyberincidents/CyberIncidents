@@ -500,18 +500,26 @@ if (!validFieldSelection) {
     // --------------------------------------------------
 
     if (isPublished) {
-      void sendNewBlogNotification({
+  try {
+    const notificationResult =
+      await sendNewBlogNotification({
         id: blog.id,
         title: blog.title,
         slug: blog.slug,
         excerpt: blog.excerpt,
-      }).catch((error) => {
-        console.error(
-          "NEW BLOG NOTIFICATION ERROR:",
-          error
-        );
       });
-    }
+
+    console.log(
+      "NEW BLOG NOTIFICATION RESULT:",
+      notificationResult
+    );
+  } catch (error) {
+    console.error(
+      "NEW BLOG NOTIFICATION ERROR:",
+      error
+    );
+  }
+}
 
     // --------------------------------------------------
     // Success
