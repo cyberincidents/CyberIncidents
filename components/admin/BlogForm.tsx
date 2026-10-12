@@ -244,7 +244,7 @@ export default function BlogEditForm({ blog, fields }: Props) {
     title: "",
     slug: "",
     excerpt: null,
-    author: "CyberIncidents Team",
+    author: "Rohith Hari",
     content: "",
     status: "DRAFT",
     access: "FREE",
@@ -346,7 +346,7 @@ export default function BlogEditForm({ blog, fields }: Props) {
   const [excerpt, setExcerpt] = useState(formBlog.excerpt ?? "");
 
   const [author, setAuthor] = useState(
-    formBlog.author || "CyberIncidents Team"
+  formBlog.author || "Rohith Hari"
   );
 
   const [blocks, setBlocks] = useState<ContentBlock[]>(buildInitialBlocks);
@@ -375,8 +375,11 @@ export default function BlogEditForm({ blog, fields }: Props) {
       : null
   );
 
-  const [status, setStatus] = useState(formBlog.status);
-
+const [status, setStatus] = useState<
+  "DRAFT" | "PUBLISHED" | "ARCHIVED"
+>(
+  isEditMode ? formBlog.status : "PUBLISHED"
+);
   const [access, setAccess] = useState(formBlog.access);
 
   const [featured, setFeatured] = useState(formBlog.featured);
@@ -524,6 +527,10 @@ export default function BlogEditForm({ blog, fields }: Props) {
       return;
     }
 
+    if (!excerpt.trim()) {
+  setMessage("Excerpt is required.");
+  return;
+  }
     /* -----------------------------------------------
        Validate primary image
     ------------------------------------------------ */
@@ -1227,13 +1234,13 @@ export default function BlogEditForm({ blog, fields }: Props) {
                   value={status}
                   onChange={(event) =>
                     setStatus(
-                      event.target.value as "DRAFT" | "PUBLISHED" | "ARCHIVED"
+                      event.target.value as "PUBLISHED" | "DRAFT" | "ARCHIVED"
                     )
                   }
                   className={inputClass}
                 >
-                  <option value="DRAFT">Draft</option>
                   <option value="PUBLISHED">Published</option>
+                  <option value="DRAFT">Draft</option>
                   <option value="ARCHIVED">Archived</option>
                 </select>
               </div>
