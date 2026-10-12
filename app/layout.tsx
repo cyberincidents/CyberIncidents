@@ -7,18 +7,20 @@ import SmoothScroll from "@/components/smooth-scroll";
 import "./globals.css";
 import PageLoader from "@/components/layout/PageLoader";
 
+
 const SITE_URL = "https://cyberincidents.in";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
 
   title: {
-    default: "CyberIncidents | Cybersecurity News, Threats & Analysis",
+    default:
+      "CyberIncidents - Cyber Incidents, Cybersecurity News & Threat Intelligence",
     template: "%s | CyberIncidents",
   },
 
   description:
-    "CyberIncidents publishes cybersecurity news, threat intelligence, incident investigations, security research, emerging threats, and practical cybersecurity guides.",
+    "CyberIncidents (Cyber Incidents) is a cybersecurity platform covering cyber incidents, cyber attacks, security breaches, threat intelligence, incident investigations, security research, and cybersecurity news.",
 
   applicationName: "CyberIncidents",
 
@@ -33,28 +35,27 @@ export const metadata: Metadata = {
   publisher: "CyberIncidents",
 
   keywords: [
-    "cybersecurity",
-    "cyber security",
+    "CyberIncidents",
+    "Cyber Incidents",
+    "Cyber Incident",
+    "cyberincidents.in",
+    "cyber incidents news",
     "cybersecurity news",
-    "cyber threats",
-    "cyber attacks",
-    "threat intelligence",
-    "security incidents",
-    "incident investigation",
+    "cyber incident reports",
+    "cyber attack news",
+    "cybersecurity threat intelligence",
+    "security breaches",
+    "incident investigations",
+    "cybersecurity research",
+    "information security",
     "network security",
     "cloud security",
     "application security",
-    "information security",
-    "cybersecurity research",
-    "cybersecurity analysis",
-    "cybersecurity awareness",
-    "cybersecurity guides",
   ],
 
   robots: {
     index: true,
     follow: true,
-
     googleBot: {
       index: true,
       follow: true,
@@ -72,19 +73,22 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     siteName: "CyberIncidents",
-    title: "CyberIncidents | Cybersecurity News, Threats & Analysis",
+    title:
+      "CyberIncidents - Cyber Incidents, Cybersecurity News & Threat Intelligence",
     description:
-      "Cybersecurity news, threat intelligence, incident investigations, security research, emerging threats, and practical cybersecurity guides.",
+      "Follow CyberIncidents for cybersecurity news, cyber incident reports, threat intelligence, security breach investigations, and security research.",
     locale: "en_US",
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "CyberIncidents | Cybersecurity News, Threats & Analysis",
+    title:
+      "CyberIncidents - Cyber Incidents, Cybersecurity News & Threat Intelligence",
     description:
-      "Cybersecurity news, threat intelligence, incident investigations, security research, emerging threats, and practical cybersecurity guides.",
+      "Cybersecurity news, cyber incident reports, threat intelligence, and security research from CyberIncidents.",
   },
 };
+
 
 export default function RootLayout({
   children,
