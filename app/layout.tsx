@@ -38,6 +38,7 @@ export const metadata: Metadata = {
     "CyberIncidents",
     "Cyber Incidents",
     "Cyber Incident",
+    "CyberIncident",
     "cyberincidents.in",
     "cyber incidents news",
     "cybersecurity news",
