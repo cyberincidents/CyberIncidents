@@ -23,9 +23,9 @@ export default function BlogCard({ blog }: BlogCardProps) {
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-        <span className="absolute left-4 top-4 rounded-full bg-black/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#00d9ff] backdrop-blur-sm border border-[#00a8ff]/30">
+        {/* <span className="absolute left-4 top-4 rounded-full bg-black/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#00d9ff] backdrop-blur-sm border border-[#00a8ff]/30">
           {blog.field}
-        </span>
+        </span> */}
       </Link>
 
       {/* Content */}

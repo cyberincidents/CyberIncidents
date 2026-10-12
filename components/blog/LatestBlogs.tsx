@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 
 // export const dynamic = "force-dynamic";
@@ -85,7 +86,11 @@ function getShortDescription(blog: LatestBlog, maxLength: number) {
   return `${plainText.slice(0, maxLength).trim()}...`;
 }
 
-function ArrowIcon({ className = "h-4 w-4" }: { className?: string }) {
+function ArrowIcon({
+  className = "h-4 w-4",
+}: {
+  className?: string;
+}) {
   return (
     <svg
       aria-hidden="true"
@@ -101,7 +106,11 @@ function ArrowIcon({ className = "h-4 w-4" }: { className?: string }) {
 }
 
 export default function LatestBlogs({ blogs }: LatestBlogsProps) {
-  if (blogs.length === 0) {
+  // Display only the seven latest posts.
+  // The incoming blogs array must be sorted newest first.
+  const latestBlogs = blogs.slice(0, 7);
+
+  if (latestBlogs.length === 0) {
     return null;
   }
 
@@ -113,17 +122,17 @@ export default function LatestBlogs({ blogs }: LatestBlogsProps) {
             <h2 className="text-3xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-4xl">
               Latest posts
             </h2>
+
             <p className="mt-3 max-w-sm text-[15px] leading-6 text-gray-500 dark:text-white/50">
-              {blogs.length} {blogs.length === 1 ? "entry" : "entries"}, most
-              recent posts.
+              {latestBlogs.length}{" "}
+              {latestBlogs.length === 1 ? "entry" : "entries"}, most recent
+              posts.
             </p>
           </div>
-
-          
         </div>
 
         <div className="mt-12 border-t border-gray-200 dark:border-white/10">
-          {blogs.map((blog, index) => {
+          {latestBlogs.map((blog, index) => {
             const primaryImage = getPrimaryImage(blog);
             const description = getShortDescription(blog, 150);
 
@@ -138,13 +147,16 @@ export default function LatestBlogs({ blogs }: LatestBlogsProps) {
                   className="absolute -left-5 top-0 h-full w-px bg-gradient-to-b from-[#00a8ff] to-[#00d9ff] opacity-0 transition-opacity duration-200 group-hover:opacity-100 sm:-left-8"
                 />
 
-                <span className="hidden shrink-0 font-mono text-sm text-gray-400 dark:text-white/30 transition-colors duration-200 group-hover:text-[#00a8ff] sm:block">
+                <span
+                  aria-hidden="true"
+                  className="hidden shrink-0 font-mono text-sm text-gray-400 transition-colors duration-200 group-hover:text-[#00a8ff] dark:text-white/30 sm:block"
+                >
                   {String(index + 1).padStart(2, "0")}
                 </span>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-[19px] font-bold leading-[1.3] tracking-[-0.01em] text-gray-900 dark:text-white transition-colors duration-200 group-hover:text-[#00a8ff] sm:text-[21px]">
+                    <h3 className="text-[19px] font-bold leading-[1.3] tracking-[-0.01em] text-gray-900 transition-colors duration-200 group-hover:text-[#00a8ff] dark:text-white sm:text-[21px]">
                       {blog.title}
                     </h3>
 
@@ -163,7 +175,11 @@ export default function LatestBlogs({ blogs }: LatestBlogsProps) {
 
                   <div className="mt-3 flex flex-wrap items-center gap-3 font-mono text-[12px] text-gray-400 dark:text-white/40">
                     {blog.publishedAt && (
-                      <time dateTime={new Date(blog.publishedAt).toISOString()}>
+                      <time
+                        dateTime={new Date(
+                          blog.publishedAt
+                        ).toISOString()}
+                      >
                         {formatDate(blog.publishedAt)}
                       </time>
                     )}
@@ -174,7 +190,7 @@ export default function LatestBlogs({ blogs }: LatestBlogsProps) {
                   </div>
                 </div>
 
-                <div className="hidden h-20 w-28 shrink-0 overflow-hidden border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 sm:block">
+                <div className="hidden h-20 w-28 shrink-0 overflow-hidden border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5 sm:block">
                   {primaryImage?.url ? (
                     <img
                       src={primaryImage.url}
@@ -189,7 +205,7 @@ export default function LatestBlogs({ blogs }: LatestBlogsProps) {
                   )}
                 </div>
 
-                <ArrowIcon className="hidden h-4 w-4 shrink-0 text-gray-300 dark:text-white/30 transition-all duration-200 group-hover:translate-x-1 group-hover:text-[#00a8ff] md:block" />
+                <ArrowIcon className="hidden h-4 w-4 shrink-0 text-gray-300 transition-all duration-200 group-hover:translate-x-1 group-hover:text-[#00a8ff] dark:text-white/30 md:block" />
               </Link>
             );
           })}

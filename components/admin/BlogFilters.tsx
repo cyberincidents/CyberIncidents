@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -32,119 +33,51 @@ const MAIN_CATEGORY_SLUGS = [
   "guides-learning",
 ];
 
-export default function BlogFilters({
-  fields,
-}: BlogFiltersProps) {
+export default function BlogFilters({ fields }: BlogFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // =========================================================
-  // CURRENT URL FILTERS
-  // =========================================================
+  const queryString = searchParams.toString();
 
-  const currentField =
-    searchParams.get("field") ?? "";
+  const currentField = searchParams.get("field") ?? "";
+  const currentStatus = searchParams.get("status") ?? "";
+  const currentAccess = searchParams.get("access") ?? "";
+  const currentFeatured = searchParams.get("featured") ?? "";
 
-  const currentStatus =
-    searchParams.get("status") ?? "";
+  const [isOpen, setIsOpen] = useState(false);
+  const [parentCategory, setParentCategory] = useState("");
+  const [field, setField] = useState(currentField);
+  const [status, setStatus] = useState(currentStatus);
+  const [access, setAccess] = useState(currentAccess);
+  const [featured, setFeatured] = useState(currentFeatured);
+  const [isPending, startTransition] = useTransition();
 
-  const currentAccess =
-    searchParams.get("access") ?? "";
-
-  const currentFeatured =
-    searchParams.get("featured") ?? "";
-
-  // =========================================================
-  // LOCAL FILTER STATE
-  // =========================================================
-
-  const [isOpen, setIsOpen] =
-    useState(false);
-
-  const [parentCategory, setParentCategory] =
-    useState("");
-
-  const [field, setField] =
-    useState(currentField);
-
-  const [status, setStatus] =
-    useState(currentStatus);
-
-  const [access, setAccess] =
-    useState(currentAccess);
-
-  const [featured, setFeatured] =
-    useState(currentFeatured);
-
-  const [isPending, startTransition] =
-    useTransition();
-
-  // =========================================================
-  // MAIN PARENT CATEGORIES
-  // =========================================================
-
-  const parentCategories = useMemo(() => {
-    return MAIN_CATEGORY_SLUGS
-      .map((slug) =>
-        fields.find(
-          (item) =>
-            item.slug === slug &&
-            item.parentId === null
+  const parentCategories = useMemo(
+    () =>
+      MAIN_CATEGORY_SLUGS
+        .map((slug) =>
+          fields.find(
+            (item) => item.slug === slug && item.parentId === null
+          )
         )
-      )
-      .filter(
-        (item): item is Field =>
-          Boolean(item)
-      );
-  }, [fields]);
+        .filter((item): item is Field => Boolean(item)),
+    [fields]
+  );
 
-  // =========================================================
-  // CHILD FIELDS
-  //
-  // These are the fields belonging to the selected
-  // parent category.
-  // =========================================================
+  const selectedParent = parentCategories.find(
+    (item) => item.slug === parentCategory
+  );
 
   const childFields = useMemo(() => {
-    if (!parentCategory) {
-      return [];
-    }
-
-    const parent = parentCategories.find(
-      (item) =>
-        item.slug === parentCategory
-    );
-
-    if (!parent) {
-      return [];
-    }
+    if (!selectedParent) return [];
 
     return fields
-      .filter(
-        (item) =>
-          item.parentId === parent.id
-      )
-      .sort((a, b) =>
-        a.name.localeCompare(b.name)
-      );
-  }, [
-    fields,
-    parentCategory,
-    parentCategories,
-  ]);
+      .filter((item) => item.parentId === selectedParent.id)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [fields, selectedParent]);
 
-  // =========================================================
-  // FIND PARENT OF CURRENTLY SELECTED FIELD
-  //
-  // This is useful when the page is opened with:
-  //
-  // ?field=some-child-id
-  //
-  // The parent dropdown will automatically show the
-  // correct parent category.
-  // =========================================================
-
+  // Restore the category dropdown when a field is already in the URL.
   useEffect(() => {
     if (!currentField) {
       setParentCategory("");
@@ -152,8 +85,7 @@ export default function BlogFilters({
     }
 
     const selectedField = fields.find(
-      (item) =>
-        item.id === currentField
+      (item) => item.id === currentField
     );
 
     if (!selectedField) {
@@ -161,52 +93,21 @@ export default function BlogFilters({
       return;
     }
 
-    // If this field has a parent,
-    // select that parent.
+    const parent = selectedField.parentId
+      ? fields.find((item) => item.id === selectedField.parentId)
+      : selectedField;
 
-    if (selectedField.parentId) {
-      const parent = fields.find(
-        (item) =>
-          item.id ===
-          selectedField.parentId
-      );
-
-      if (
-        parent &&
-        MAIN_CATEGORY_SLUGS.includes(
-          parent.slug
-        )
-      ) {
-        setParentCategory(
-          parent.slug
-        );
-      }
-    }
+    setParentCategory(
+      parent && MAIN_CATEGORY_SLUGS.includes(parent.slug)
+        ? parent.slug
+        : ""
+    );
   }, [currentField, fields]);
 
-  // =========================================================
-  // KEEP LOCAL STATE IN SYNC WITH URL
-  // =========================================================
-
-  useEffect(() => {
-    setField(currentField);
-  }, [currentField]);
-
-  useEffect(() => {
-    setStatus(currentStatus);
-  }, [currentStatus]);
-
-  useEffect(() => {
-    setAccess(currentAccess);
-  }, [currentAccess]);
-
-  useEffect(() => {
-    setFeatured(currentFeatured);
-  }, [currentFeatured]);
-
-  // =========================================================
-  // ACTIVE FILTER COUNT
-  // =========================================================
+  useEffect(() => setField(currentField), [currentField]);
+  useEffect(() => setStatus(currentStatus), [currentStatus]);
+  useEffect(() => setAccess(currentAccess), [currentAccess]);
+  useEffect(() => setFeatured(currentFeatured), [currentFeatured]);
 
   const activeFilterCount = [
     currentField,
@@ -215,93 +116,42 @@ export default function BlogFilters({
     currentFeatured,
   ].filter(Boolean).length;
 
-  // =========================================================
-  // PARENT CATEGORY CHANGE
-  // =========================================================
-
-  function handleParentChange(
-    value: string
-  ) {
+  function handleParentChange(value: string) {
     setParentCategory(value);
 
-    // A field from the previous parent
-    // should not remain selected.
+    const parent = parentCategories.find(
+      (item) => item.slug === value
+    );
 
-    setField("");
+    // The parent itself becomes the selected database field.
+    setField(parent?.id ?? "");
   }
 
-  // =========================================================
-  // APPLY FILTERS
-  // =========================================================
-
   function applyFilters() {
-    const params =
-      new URLSearchParams(
-        searchParams.toString()
-      );
+    const params = new URLSearchParams(queryString);
 
-    // -------------------------------------------------------
-    // FIELD
-    // -------------------------------------------------------
+    if (field) params.set("field", field);
+    else params.delete("field");
 
-    if (field) {
-      params.set("field", field);
-    } else {
-      params.delete("field");
-    }
+    if (status) params.set("status", status);
+    else params.delete("status");
 
-    // -------------------------------------------------------
-    // STATUS
-    // -------------------------------------------------------
+    if (access) params.set("access", access);
+    else params.delete("access");
 
-    if (status) {
-      params.set("status", status);
-    } else {
-      params.delete("status");
-    }
-
-    // -------------------------------------------------------
-    // ACCESS
-    // -------------------------------------------------------
-
-    if (access) {
-      params.set("access", access);
-    } else {
-      params.delete("access");
-    }
-
-    // -------------------------------------------------------
-    // FEATURED
-    // -------------------------------------------------------
-
-    if (featured) {
-      params.set("featured", featured);
-    } else {
-      params.delete("featured");
-    }
-
-    // Changing filters should always return
-    // to page 1.
+    if (featured) params.set("featured", featured);
+    else params.delete("featured");
 
     params.delete("page");
 
-    startTransition(() => {
-      const query = params.toString();
+    const query = params.toString();
 
-      router.replace(
-        query
-          ? `${pathname}?${query}`
-          : pathname,
-        {
-          scroll: false,
-        }
-      );
+    startTransition(() => {
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
     });
   }
-
-  // =========================================================
-  // CLEAR FILTERS
-  // =========================================================
 
   function clearFilters() {
     setParentCategory("");
@@ -310,10 +160,7 @@ export default function BlogFilters({
     setAccess("");
     setFeatured("");
 
-    const params =
-      new URLSearchParams(
-        searchParams.toString()
-      );
+    const params = new URLSearchParams(queryString);
 
     params.delete("field");
     params.delete("status");
@@ -321,41 +168,24 @@ export default function BlogFilters({
     params.delete("featured");
     params.delete("page");
 
-    startTransition(() => {
-      const query = params.toString();
+    const query = params.toString();
 
-      router.replace(
-        query
-          ? `${pathname}?${query}`
-          : pathname,
-        {
-          scroll: false,
-        }
-      );
+    startTransition(() => {
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
     });
   }
 
   return (
     <section className="overflow-hidden rounded-xl border border-white/10 bg-[#111113] shadow-sm">
-      {/* =======================================================
-          FILTER HEADER
-      ======================================================= */}
-
       <button
         type="button"
-        onClick={() =>
-          setIsOpen((prev) => !prev)
-        }
+        onClick={() => setIsOpen((previous) => !previous)}
         className="flex w-full items-center justify-between px-6 py-4 text-left transition hover:bg-white/[0.02]"
         aria-expanded={isOpen}
       >
-        {/* -----------------------------------------------------
-            LEFT SIDE
-        ----------------------------------------------------- */}
-
         <div className="flex items-center gap-3">
-          {/* Arrow */}
-
           <svg
             className={`h-4 w-4 text-zinc-500 transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
@@ -375,16 +205,11 @@ export default function BlogFilters({
             <h2 className="text-sm font-semibold text-zinc-100">
               Filters
             </h2>
-
             <p className="mt-0.5 text-xs text-zinc-400">
               Narrow down your results
             </p>
           </div>
         </div>
-
-        {/* -----------------------------------------------------
-            RIGHT SIDE
-        ----------------------------------------------------- */}
 
         <div className="flex items-center gap-3">
           {activeFilterCount > 0 && (
@@ -399,18 +224,9 @@ export default function BlogFilters({
         </div>
       </button>
 
-      {/* =======================================================
-          FILTER PANEL
-      ======================================================= */}
-
       {isOpen && (
         <div className="border-t border-white/10 bg-[#0a0a0c]/50 px-6 py-5">
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-
-            {/* =================================================
-                PARENT CATEGORY
-            ================================================= */}
-
             <div>
               <label
                 htmlFor="parent-category"
@@ -422,33 +238,18 @@ export default function BlogFilters({
               <select
                 id="parent-category"
                 value={parentCategory}
-                onChange={(event) =>
-                  handleParentChange(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => handleParentChange(event.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">
-                  All Categories
-                </option>
+                <option value="">All Categories</option>
 
-                {parentCategories.map(
-                  (parent) => (
-                    <option
-                      key={parent.id}
-                      value={parent.slug}
-                    >
-                      {parent.name}
-                    </option>
-                  )
-                )}
+                {parentCategories.map((parent) => (
+                  <option key={parent.id} value={parent.slug}>
+                    {parent.name}
+                  </option>
+                ))}
               </select>
             </div>
-
-            {/* =================================================
-                FIELD
-            ================================================= */}
 
             <div>
               <label
@@ -461,36 +262,21 @@ export default function BlogFilters({
               <select
                 id="field"
                 value={field}
-                onChange={(event) =>
-                  setField(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => setField(event.target.value)}
                 disabled={!parentCategory}
                 className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <option value="">
-                  {parentCategory
-                    ? "All Fields"
-                    : "Select Category First"}
+                <option value={selectedParent?.id ?? ""}>
+                  {parentCategory ? "All Fields" : "Select Category First"}
                 </option>
 
-                {childFields.map(
-                  (child) => (
-                    <option
-                      key={child.id}
-                      value={child.id}
-                    >
-                      {child.name}
-                    </option>
-                  )
-                )}
+                {childFields.map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {child.name}
+                  </option>
+                ))}
               </select>
             </div>
-
-            {/* =================================================
-                STATUS
-            ================================================= */}
 
             <div>
               <label
@@ -503,34 +289,15 @@ export default function BlogFilters({
               <select
                 id="status"
                 value={status}
-                onChange={(event) =>
-                  setStatus(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => setStatus(event.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">
-                  All Statuses
-                </option>
-
-                <option value="DRAFT">
-                  Draft
-                </option>
-
-                <option value="PUBLISHED">
-                  Published
-                </option>
-
-                <option value="ARCHIVED">
-                  Archived
-                </option>
+                <option value="">All Statuses</option>
+                <option value="DRAFT">Draft</option>
+                <option value="PUBLISHED">Published</option>
+                <option value="ARCHIVED">Archived</option>
               </select>
             </div>
-
-            {/* =================================================
-                ACCESS
-            ================================================= */}
 
             <div>
               <label
@@ -543,30 +310,14 @@ export default function BlogFilters({
               <select
                 id="access"
                 value={access}
-                onChange={(event) =>
-                  setAccess(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => setAccess(event.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">
-                  All Access
-                </option>
-
-                <option value="FREE">
-                  Free
-                </option>
-
-                <option value="PAID">
-                  Paid
-                </option>
+                <option value="">All Access</option>
+                <option value="FREE">Free</option>
+                <option value="PAID">Paid</option>
               </select>
             </div>
-
-            {/* =================================================
-                FEATURED
-            ================================================= */}
 
             <div>
               <label
@@ -579,55 +330,30 @@ export default function BlogFilters({
               <select
                 id="featured"
                 value={featured}
-                onChange={(event) =>
-                  setFeatured(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => setFeatured(event.target.value)}
                 className="w-full rounded-lg border border-white/10 bg-[#111113] px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-[var(--cyber-blue)] focus:ring-1 focus:ring-[var(--cyber-blue)]"
               >
-                <option value="">
-                  All Blogs
-                </option>
-
-                <option value="true">
-                  Featured
-                </option>
-
-                <option value="false">
-                  Not Featured
-                </option>
+                <option value="">All Blogs</option>
+                <option value="true">Featured</option>
+                <option value="false">Not Featured</option>
               </select>
             </div>
           </div>
 
-          {/* =====================================================
-              ACTION BUTTONS
-          ===================================================== */}
-
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            {/* Apply */}
-
             <button
               type="button"
               onClick={applyFilters}
               disabled={isPending}
               className="rounded-lg bg-gradient-to-r from-[var(--cyber-blue)] to-[var(--cyber-cyan)] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending
-                ? "Applying..."
-                : "Apply Filters"}
+              {isPending ? "Applying..." : "Apply Filters"}
             </button>
-
-            {/* Clear */}
 
             <button
               type="button"
               onClick={clearFilters}
-              disabled={
-                isPending ||
-                activeFilterCount === 0
-              }
+              disabled={isPending || activeFilterCount === 0}
               className="rounded-lg border border-white/10 px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Clear Filters

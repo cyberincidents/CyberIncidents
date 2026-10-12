@@ -1,62 +1,89 @@
+
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition, useEffect } from "react";
+import {
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 export default function BlogSearch() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const queryString = searchParams.toString();
   const currentSearch = searchParams.get("search") ?? "";
-  
+
   const [value, setValue] = useState(currentSearch);
-  const [prevSearch, setPrevSearch] = useState(currentSearch);
   const [isPending, startTransition] = useTransition();
 
-  // Sync state during render (React 18+ recommended pattern to avoid useEffect cascading renders)
-  if (currentSearch !== prevSearch) {
-    setPrevSearch(currentSearch);
+  const submittedSearch = useRef<string | null>(null);
+
+  // Sync with URL changes from browser navigation or other controls,
+  // without overwriting text during our own search navigation.
+  useEffect(() => {
+    if (submittedSearch.current !== null) {
+      if (submittedSearch.current === currentSearch) {
+        submittedSearch.current = null;
+      }
+      return;
+    }
+
     setValue(currentSearch);
-  }
+  }, [currentSearch]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
+    const search = value.trim();
 
-      if (value.trim()) {
-        params.set("search", value.trim());
+    if (search === currentSearch) return;
+
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(queryString);
+
+      if (search) {
+        params.set("search", search);
       } else {
         params.delete("search");
       }
 
       params.delete("page");
-      const urlSearch = searchParams.get("search") ?? "";
 
-      if (value.trim() === urlSearch) return;
+      const query = params.toString();
+      submittedSearch.current = search;
 
       startTransition(() => {
-        const query = params.toString();
-        router.replace(query ? `${pathname}?${query}` : pathname, {
-          scroll: false,
-        });
+        router.replace(
+          query ? `${pathname}?${query}` : pathname,
+          { scroll: false }
+        );
       });
-    }, 250);
+    }, 350);
 
-    return () => clearTimeout(timer);
-  }, [value, pathname, router, searchParams]);
+    return () => window.clearTimeout(timer);
+  }, [value, currentSearch, queryString, pathname, router]);
 
   function clearSearch() {
     setValue("");
-    const params = new URLSearchParams(searchParams.toString());
+    submittedSearch.current = "";
+
+    const params = new URLSearchParams(queryString);
     params.delete("search");
     params.delete("page");
 
+    const query = params.toString();
+
     startTransition(() => {
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
+      router.replace(
+        query ? `${pathname}?${query}` : pathname,
+        { scroll: false }
+      );
     });
   }
 
@@ -64,7 +91,9 @@ export default function BlogSearch() {
     <section className="rounded-xl border border-white/10 bg-[#111113] p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-100">Search Blogs</h2>
+          <h2 className="text-sm font-semibold text-zinc-100">
+            Search Blogs
+          </h2>
           <p className="mt-1 text-xs text-zinc-400">
             Find articles by title, slug or excerpt.
           </p>
@@ -84,8 +113,19 @@ export default function BlogSearch() {
           fill="none"
           aria-hidden="true"
         >
-          <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M13.5 13.5L17 17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <circle
+            cx="9"
+            cy="9"
+            r="6"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M13.5 13.5L17 17"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
         </svg>
 
         <input
