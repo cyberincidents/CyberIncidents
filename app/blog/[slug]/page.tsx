@@ -469,7 +469,7 @@ export default async function BlogPage({
   =================================================== */
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-[#05070a] dark:text-white">
+    <main className="min-h-screen w-full max-w-full overflow-x-clip bg-white text-gray-900 transition-colors duration-300 dark:bg-[#05070a] dark:text-white">
 
       {/* =================================================
           STRUCTURED DATA
@@ -507,7 +507,7 @@ export default async function BlogPage({
 
       <section className="border-b border-gray-100 bg-white dark:border-white/10 dark:bg-[#05070a]">
 
-        <div className="mx-auto max-w-3xl px-5 pb-14 pt-14 sm:px-8 sm:pt-20">
+        <div className="mx-auto w-full max-w-3xl min-w-0 px-5 pb-14 pt-14 sm:px-8 sm:pt-20">
 
           {/* =================================================
               BREADCRUMB
@@ -585,7 +585,7 @@ export default async function BlogPage({
               TITLE
           ================================================= */}
 
-          <h1 className="mt-5 text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-gray-900 dark:text-white sm:text-5xl">
+          <h1 className="mt-5 text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-gray-900 dark:text-white sm:text-5xl break-words [overflow-wrap:anywhere]">
             {blog.title}
           </h1>
 
@@ -594,7 +594,7 @@ export default async function BlogPage({
           ================================================= */}
 
           {blog.excerpt && (
-            <p className="mt-6 text-base leading-8 text-gray-500 dark:text-white/60 sm:text-lg">
+            <p className="mt-6 text-base leading-8 text-gray-500 dark:text-white/60 sm:text-lg break-words [overflow-wrap:anywhere]">
               {blog.excerpt}
             </p>
           )}
@@ -639,7 +639,7 @@ export default async function BlogPage({
 ================================================= */}
 
 {primaryImage?.url && (
-  <section className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+  <section className="mx-auto w-full max-w-5xl min-w-0 px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
     <figure className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl shadow-black/5 dark:border-white/10 dark:bg-[#090d14] dark:shadow-black/20">
       <Image
         src={primaryImage.url}
@@ -663,7 +663,7 @@ export default async function BlogPage({
           ARTICLE CONTENT
       ================================================= */}
 
-      <section className="mx-auto max-w-5xl px-5 pb-20 sm:px-8 lg:px-10">
+      <section className="mx-auto w-full max-w-5xl min-w-0 px-5 pb-20 sm:px-8 lg:px-10 overflow-hidden">
 
         <ArticleContent
           content={blog.content}
@@ -673,7 +673,7 @@ export default async function BlogPage({
             ARTICLE FOOTER / SHARING
         ================================================= */}
 
-        <div className="mt-16 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-gray-50 px-5 py-5 dark:border-white/10 dark:bg-[#090d14]">
+        <div className="mt-16 flex w-full min-w-0 flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-gray-50 px-5 py-5 dark:border-white/10 dark:bg-[#090d14]">
 
           <div className="text-sm text-gray-500 dark:text-white/70">
 

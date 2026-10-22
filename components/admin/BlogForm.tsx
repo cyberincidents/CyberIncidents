@@ -17,6 +17,7 @@ type Field = {
   name: string;
   slug: string;
   number: string | null;
+  parentId?: string | null;
 };
 
 type BlogImage = {
@@ -60,7 +61,21 @@ type UploadedImage = {
   height: number;
 };
 
-type RawBlock =
+export type TableData = {
+  hasHeader: boolean;
+  caption?: string;
+  headers: string[];
+  rows: string[][];
+};
+
+export type CommandData = {
+  command: string;
+  language?: string;
+  description?: string;
+  output?: string;
+};
+
+export type RawBlock =
   | {
       type: "text";
       text: string;
@@ -68,6 +83,14 @@ type RawBlock =
   | {
       type: "image";
       image: UploadedImage | null;
+    }
+  | {
+      type: "table";
+      table: TableData;
+    }
+  | {
+      type: "command";
+      command: CommandData;
     };
 
 /*
@@ -76,6 +99,31 @@ type RawBlock =
  * The id is UI-only and is never sent to the API.
  */
 type ContentBlock = RawBlock & { id: string };
+
+/* =====================================================
+   DEFAULT DATA CREATORS
+===================================================== */
+
+function createDefaultTable(): TableData {
+  return {
+    hasHeader: true,
+    caption: "",
+    headers: ["Column 1", "Column 2", "Column 3"],
+    rows: [
+      ["", "", ""],
+      ["", "", ""],
+    ],
+  };
+}
+
+function createDefaultCommand(): CommandData {
+  return {
+    command: "",
+    language: "bash",
+    description: "",
+    output: "",
+  };
+}
 
 /* =====================================================
    PARSE CONTENT
@@ -91,13 +139,60 @@ function parseContent(content: string): RawBlock[] {
 
     return parsed
       .filter(
-        (block) => block?.type === "text" || block?.type === "image"
+        (block) =>
+          block?.type === "text" ||
+          block?.type === "image" ||
+          block?.type === "table" ||
+          block?.type === "command"
       )
       .map((block): RawBlock => {
         if (block.type === "text") {
           return {
             type: "text",
             text: String(block.text ?? ""),
+          };
+        }
+
+        if (block.type === "table") {
+          const rawTable = block.table || {};
+          const headers = Array.isArray(rawTable.headers)
+            ? rawTable.headers.map(String)
+            : ["Column 1", "Column 2", "Column 3"];
+          const colCount = Math.max(headers.length, 1);
+          const rawRows = Array.isArray(rawTable.rows) ? rawTable.rows : [];
+          const rows = rawRows.map((row: unknown) => {
+            if (Array.isArray(row)) {
+              const padded = row.map(String);
+              while (padded.length < colCount) padded.push("");
+              return padded.slice(0, colCount);
+            }
+            return new Array(colCount).fill("");
+          });
+
+          return {
+            type: "table",
+            table: {
+              hasHeader: rawTable.hasHeader ?? true,
+              caption: rawTable.caption ? String(rawTable.caption) : "",
+              headers,
+              rows: rows.length > 0 ? rows : [new Array(colCount).fill("")],
+            },
+          };
+        }
+
+        if (block.type === "command") {
+          const rawCmd =
+            typeof block.command === "object" && block.command !== null
+              ? block.command
+              : { command: String(block.command ?? "") };
+          return {
+            type: "command",
+            command: {
+              command: String(rawCmd.command ?? block.text ?? ""),
+              language: String(rawCmd.language ?? "bash"),
+              description: String(rawCmd.description ?? ""),
+              output: String(rawCmd.output ?? ""),
+            },
           };
         }
 
@@ -137,10 +232,6 @@ function generateSlug(value: string): string {
    SHARED STYLES
 ===================================================== */
 
-/*
- * text-base on mobile prevents iOS Safari from zooming into
- * inputs on focus; it drops to text-sm from the sm breakpoint.
- */
 const inputClass =
   "w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-base text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 sm:text-sm";
 
@@ -226,18 +317,8 @@ function CheckBox({
    COMPONENT
 ===================================================== */
 
-export default function BlogEditForm({ blog, fields }: Props) {
+export default function BlogForm({ blog, fields }: Props) {
   const router = useRouter();
-
-  /*
-   * Supports both:
-   *
-   * CREATE
-   * <BlogEditForm fields={fields} />
-   *
-   * EDIT
-   * <BlogEditForm blog={blog} fields={fields} />
-   */
 
   const formBlog: Blog = blog ?? {
     id: "",
@@ -268,10 +349,6 @@ export default function BlogEditForm({ blog, fields }: Props) {
      EXISTING CONTENT
   =================================================== */
 
-  /*
-   * Stable block ids. Initial blocks use their index,
-   * new blocks continue from the counter.
-   */
   const idCounter = useRef(0);
 
   function makeId() {
@@ -284,10 +361,6 @@ export default function BlogEditForm({ blog, fields }: Props) {
       ? parseContent(formBlog.content)
       : [{ type: "text", text: "" }];
 
-    /*
-     * Match existing inline images with their
-     * BlogImage database records.
-     */
     const matched = rawBlocks.map((block): RawBlock => {
       if (block.type !== "image" || !block.image) {
         return block;
@@ -327,39 +400,14 @@ export default function BlogEditForm({ blog, fields }: Props) {
   =================================================== */
 
   const [title, setTitle] = useState(formBlog.title);
-
   const [slug, setSlug] = useState(formBlog.slug);
-
-  /*
-   * CREATE:
-   * Slug is generated automatically while typing the title.
-   *
-   * EDIT:
-   * Keep the existing slug unchanged when the title changes.
-   * Once the slug is manually cleared, changing the title will
-   * generate a new slug again.
-   */
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(
     isEditMode && Boolean(formBlog.slug.trim())
   );
-
   const [excerpt, setExcerpt] = useState(formBlog.excerpt ?? "");
-
-  const [author, setAuthor] = useState(
-  formBlog.author || "Rohith Hari"
-  );
-
+  const [author, setAuthor] = useState(formBlog.author || "Rohith Hari");
   const [blocks, setBlocks] = useState<ContentBlock[]>(buildInitialBlocks);
 
-  /*
-   * IMPORTANT:
-   *
-   * The selected fields are identified by their
-   * database IDs.
-   *
-   * The `fields` prop comes from the same Field
-   * records used by the navbar.
-   */
   const [selectedFields, setSelectedFields] = useState<string[]>(
     formBlog.fields.map((item) => item.fieldId)
   );
@@ -375,23 +423,14 @@ export default function BlogEditForm({ blog, fields }: Props) {
       : null
   );
 
-const [status, setStatus] = useState<
-  "DRAFT" | "PUBLISHED" | "ARCHIVED"
->(
-  isEditMode ? formBlog.status : "PUBLISHED"
-);
+  const [status, setStatus] = useState<"DRAFT" | "PUBLISHED" | "ARCHIVED">(
+    isEditMode ? formBlog.status : "PUBLISHED"
+  );
   const [access, setAccess] = useState(formBlog.access);
-
   const [featured, setFeatured] = useState(formBlog.featured);
-
   const [saving, setSaving] = useState(false);
-
   const [message, setMessage] = useState("");
 
-  /*
-   * Bring the error into view so it is never missed on
-   * long forms / small screens.
-   */
   const messageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -416,7 +455,25 @@ const [status, setStatus] = useState<
   }
 
   /* ===================================================
-     CONTENT BLOCKS
+     CONTENT BLOCKS - GENERAL
+  =================================================== */
+
+  function removeBlock(index: number) {
+    setBlocks((current) => current.filter((_, i) => i !== index));
+  }
+
+  function moveBlock(index: number, direction: "up" | "down") {
+    setBlocks((current) => {
+      const next = [...current];
+      const target = direction === "up" ? index - 1 : index + 1;
+      if (target < 0 || target >= next.length) return current;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  /* ===================================================
+     TEXT BLOCK
   =================================================== */
 
   function updateTextBlock(index: number, value: string) {
@@ -429,19 +486,32 @@ const [status, setStatus] = useState<
     );
   }
 
+  function addTextBlock() {
+    setBlocks((current) => [
+      ...current,
+      { id: makeId(), type: "text", text: "" },
+    ]);
+  }
+
+  function addTextBlockAfter(index: number) {
+    const id = makeId();
+    setBlocks((current) => {
+      const next = [...current];
+      next.splice(index + 1, 0, { id, type: "text", text: "" });
+      return next;
+    });
+  }
+
+  /* ===================================================
+     IMAGE BLOCK
+  =================================================== */
+
   function updateImageBlock(index: number, image: UploadedImage | null) {
     setBlocks((current) =>
       current.map((block, i) =>
         i === index && block.type === "image" ? { ...block, image } : block
       )
     );
-  }
-
-  function addTextBlock() {
-    setBlocks((current) => [
-      ...current,
-      { id: makeId(), type: "text", text: "" },
-    ]);
   }
 
   function addImageBlock() {
@@ -451,19 +521,8 @@ const [status, setStatus] = useState<
     ]);
   }
 
-  function addTextBlockAfter(index: number) {
-    const id = makeId();
-
-    setBlocks((current) => {
-      const next = [...current];
-      next.splice(index + 1, 0, { id, type: "text", text: "" });
-      return next;
-    });
-  }
-
   function addImageBlockAfter(index: number) {
     const id = makeId();
-
     setBlocks((current) => {
       const next = [...current];
       next.splice(index + 1, 0, { id, type: "image", image: null });
@@ -471,23 +530,175 @@ const [status, setStatus] = useState<
     });
   }
 
-  function removeBlock(index: number) {
-    setBlocks((current) => current.filter((_, i) => i !== index));
+  /* ===================================================
+     TABLE BLOCK
+  ===================================================== */
+
+  function addTableBlock() {
+    setBlocks((current) => [
+      ...current,
+      { id: makeId(), type: "table", table: createDefaultTable() },
+    ]);
   }
 
-  function moveBlock(index: number, direction: "up" | "down") {
+  function addTableBlockAfter(index: number) {
+    const id = makeId();
     setBlocks((current) => {
       const next = [...current];
-
-      const target = direction === "up" ? index - 1 : index + 1;
-
-      if (target < 0 || target >= next.length) {
-        return current;
-      }
-
-      [next[index], next[target]] = [next[target], next[index]];
-
+      next.splice(index + 1, 0, {
+        id,
+        type: "table",
+        table: createDefaultTable(),
+      });
       return next;
+    });
+  }
+
+  function updateTableBlock(index: number, updatedTable: TableData) {
+    setBlocks((current) =>
+      current.map((block, i) =>
+        i === index && block.type === "table"
+          ? { ...block, table: updatedTable }
+          : block
+      )
+    );
+  }
+
+  function updateTableHeader(blockIndex: number, colIndex: number, value: string) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "table") return;
+
+    const headers = [...block.table.headers];
+    headers[colIndex] = value;
+    updateTableBlock(blockIndex, { ...block.table, headers });
+  }
+
+  function updateTableCell(
+    blockIndex: number,
+    rowIndex: number,
+    colIndex: number,
+    value: string
+  ) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "table") return;
+
+    const rows = block.table.rows.map((row, r) => {
+      if (r !== rowIndex) return row;
+      const nextRow = [...row];
+      nextRow[colIndex] = value;
+      return nextRow;
+    });
+
+    updateTableBlock(blockIndex, { ...block.table, rows });
+  }
+
+  function addTableRow(blockIndex: number) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "table") return;
+
+    const colCount = block.table.headers.length || 1;
+    const newRow = new Array(colCount).fill("");
+    updateTableBlock(blockIndex, {
+      ...block.table,
+      rows: [...block.table.rows, newRow],
+    });
+  }
+
+  function removeTableRow(blockIndex: number, rowIndex: number) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "table") return;
+    if (block.table.rows.length <= 1) return;
+
+    const rows = block.table.rows.filter((_, r) => r !== rowIndex);
+    updateTableBlock(blockIndex, { ...block.table, rows });
+  }
+
+  function addTableColumn(blockIndex: number) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "table") return;
+
+    const newColNumber = block.table.headers.length + 1;
+    const headers = [...block.table.headers, `Column ${newColNumber}`];
+    const rows = block.table.rows.map((row) => [...row, ""]);
+
+    updateTableBlock(blockIndex, { ...block.table, headers, rows });
+  }
+
+  function removeTableColumn(blockIndex: number, colIndex: number) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "table") return;
+    if (block.table.headers.length <= 1) return;
+
+    const headers = block.table.headers.filter((_, c) => c !== colIndex);
+    const rows = block.table.rows.map((row) =>
+      row.filter((_, c) => c !== colIndex)
+    );
+
+    updateTableBlock(blockIndex, { ...block.table, headers, rows });
+  }
+
+  function toggleTableHeader(blockIndex: number) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "table") return;
+
+    updateTableBlock(blockIndex, {
+      ...block.table,
+      hasHeader: !block.table.hasHeader,
+    });
+  }
+
+  function updateTableCaption(blockIndex: number, caption: string) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "table") return;
+
+    updateTableBlock(blockIndex, { ...block.table, caption });
+  }
+
+  /* ===================================================
+     COMMAND BLOCK
+  ===================================================== */
+
+  function addCommandBlock() {
+    setBlocks((current) => [
+      ...current,
+      { id: makeId(), type: "command", command: createDefaultCommand() },
+    ]);
+  }
+
+  function addCommandBlockAfter(index: number) {
+    const id = makeId();
+    setBlocks((current) => {
+      const next = [...current];
+      next.splice(index + 1, 0, {
+        id,
+        type: "command",
+        command: createDefaultCommand(),
+      });
+      return next;
+    });
+  }
+
+  function updateCommandBlock(index: number, updatedCommand: CommandData) {
+    setBlocks((current) =>
+      current.map((block, i) =>
+        i === index && block.type === "command"
+          ? { ...block, command: updatedCommand }
+          : block
+      )
+    );
+  }
+
+  function updateCommandField(
+    blockIndex: number,
+    field: keyof CommandData,
+    value: string
+  ) {
+    const block = blocks[blockIndex];
+    if (block?.type !== "command") return;
+
+    updateCommandBlock(blockIndex, {
+      ...block.command,
+      [field]: value,
     });
   }
 
@@ -497,30 +708,17 @@ const [status, setStatus] = useState<
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     setMessage("");
-
-    /* -----------------------------------------------
-       Validate title
-    ------------------------------------------------ */
 
     if (!title.trim()) {
       setMessage("Title is required.");
       return;
     }
 
-    /* -----------------------------------------------
-       Validate slug
-    ------------------------------------------------ */
-
     if (!slug.trim()) {
       setMessage("Slug is required.");
       return;
     }
-
-    /* -----------------------------------------------
-       Validate author
-    ------------------------------------------------ */
 
     if (!author.trim()) {
       setMessage("Author name is required.");
@@ -528,61 +726,91 @@ const [status, setStatus] = useState<
     }
 
     if (!excerpt.trim()) {
-  setMessage("Excerpt is required.");
-  return;
-  }
-    /* -----------------------------------------------
-       Validate primary image
-    ------------------------------------------------ */
+      setMessage("Excerpt is required.");
+      return;
+    }
 
     if (!primaryImage) {
       setMessage("Primary image is required.");
       return;
     }
 
-    /* -----------------------------------------------
-       Validate fields
-    ------------------------------------------------ */
-
     if (selectedFields.length === 0) {
       setMessage("Select at least one cybersecurity field.");
       return;
     }
 
-    /* -----------------------------------------------
-       Validate article content
-    ------------------------------------------------ */
+    /* Check if article has content */
+    const hasContent = blocks.some((block) => {
+      if (block.type === "text") return block.text.trim().length > 0;
+      if (block.type === "table") {
+        return (
+          block.table.headers.some((h) => h.trim().length > 0) ||
+          block.table.rows.some((row) =>
+            row.some((cell) => cell.trim().length > 0)
+          )
+        );
+      }
+      if (block.type === "command") {
+        return block.command.command.trim().length > 0;
+      }
+      return Boolean(block.image?.url?.trim());
+    });
 
-    const hasText = blocks.some(
-      (block) => block.type === "text" && block.text.trim().length > 0
-    );
-
-    if (!hasText) {
+    if (!hasContent) {
       setMessage("Article content is required.");
       return;
     }
 
-    /* -----------------------------------------------
-       Remove empty blocks
-    ------------------------------------------------ */
-
+    /* Filter out completely empty blocks */
     const cleanedBlocks = blocks.filter((block) => {
       if (block.type === "text") {
         return block.text.trim().length > 0;
       }
-
+      if (block.type === "table") {
+        return (
+          block.table.headers.some((h) => h.trim().length > 0) ||
+          block.table.rows.some((row) =>
+            row.some((cell) => cell.trim().length > 0)
+          )
+        );
+      }
+      if (block.type === "command") {
+        return block.command.command.trim().length > 0;
+      }
       return Boolean(block.image?.url?.trim());
     });
 
-    /* -----------------------------------------------
-       Serialize article content
-    ------------------------------------------------ */
-
+    /* Serialize content blocks */
     const contentBlocks = cleanedBlocks.map((block) => {
       if (block.type === "text") {
         return {
           type: "text",
           text: block.text.trim(),
+        };
+      }
+
+      if (block.type === "table") {
+        return {
+          type: "table",
+          table: {
+            hasHeader: block.table.hasHeader,
+            caption: block.table.caption?.trim() || undefined,
+            headers: block.table.headers,
+            rows: block.table.rows,
+          },
+        };
+      }
+
+      if (block.type === "command") {
+        return {
+          type: "command",
+          command: {
+            command: block.command.command.trim(),
+            language: block.command.language?.trim() || "bash",
+            description: block.command.description?.trim() || undefined,
+            output: block.command.output?.trim() || undefined,
+          },
         };
       }
 
@@ -592,10 +820,7 @@ const [status, setStatus] = useState<
       };
     });
 
-    /* -----------------------------------------------
-       Collect inline images
-    ------------------------------------------------ */
-
+    /* Collect inline images */
     const inlineImages = cleanedBlocks
       .filter(
         (
@@ -615,10 +840,6 @@ const [status, setStatus] = useState<
         isPrimary: false,
       }));
 
-    /* -----------------------------------------------
-       All images
-    ------------------------------------------------ */
-
     const images = [
       {
         publicId: primaryImage.publicId,
@@ -631,10 +852,6 @@ const [status, setStatus] = useState<
       ...inlineImages,
     ];
 
-    /* =================================================
-       SAVE
-    ================================================= */
-
     try {
       setSaving(true);
 
@@ -644,11 +861,9 @@ const [status, setStatus] = useState<
           : "/api/admin/blogs",
         {
           method: isEditMode ? "PUT" : "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
             title: title.trim(),
             slug: slug.trim(),
@@ -658,14 +873,7 @@ const [status, setStatus] = useState<
             access,
             status,
             featured,
-
-            /*
-             * These are the IDs of the SAME
-             * cybersecurity fields used by the
-             * navbar.
-             */
             fieldIds: selectedFields,
-
             images,
           }),
         }
@@ -679,16 +887,13 @@ const [status, setStatus] = useState<
             data.error ||
             `Unable to ${isEditMode ? "update" : "create"} blog.`
         );
-
         return;
       }
 
       router.push("/admin/blogs");
-
       router.refresh();
     } catch (error) {
       console.error("BLOG SAVE ERROR:", error);
-
       setMessage(
         `Something went wrong while ${
           isEditMode ? "updating" : "creating"
@@ -709,10 +914,7 @@ const [status, setStatus] = useState<
       noValidate
       className="mx-auto w-full max-w-5xl space-y-6"
     >
-      {/* =================================================
-          ERROR / STATUS
-      ================================================= */}
-
+      {/* ERROR / STATUS */}
       {message && (
         <div
           ref={messageRef}
@@ -723,44 +925,24 @@ const [status, setStatus] = useState<
         </div>
       )}
 
-      {/* =================================================
-          TWO-COLUMN LAYOUT
-          Mobile / tablet: single column
-          Desktop (lg+):   content + sticky publishing panel
-      ================================================= */}
-
       <div>
         <div className="min-w-0 space-y-6">
-          {/* ---------------------------------------------
-              BLOG INFORMATION
-          --------------------------------------------- */}
-
+          {/* BLOG INFORMATION */}
           <section className={sectionClass}>
             <SectionHeader title="Blog Information" />
 
             <div className="space-y-5">
               {/* Title */}
-
               <div>
                 <label htmlFor="blog-title" className={labelClass}>
                   Title
                 </label>
-
                 <input
                   id="blog-title"
                   value={title}
                   onChange={(event) => {
                     const nextTitle = event.target.value;
-
                     setTitle(nextTitle);
-
-                    /*
-                     * Automatically generate the slug while the slug
-                     * is still controlled by the title.
-                     *
-                     * In edit mode, the existing slug is preserved
-                     * until the admin clears it manually.
-                     */
                     if (!slugManuallyEdited || !slug.trim()) {
                       setSlug(generateSlug(nextTitle));
                     }
@@ -771,30 +953,17 @@ const [status, setStatus] = useState<
               </div>
 
               {/* Slug + Author side by side on larger screens */}
-
               <div className="grid gap-5 md:grid-cols-2">
-                {/* Slug */}
-
                 <div className="min-w-0">
                   <label htmlFor="blog-slug" className={labelClass}>
                     Slug
                   </label>
-
                   <input
                     id="blog-slug"
                     value={slug}
                     onChange={(event) => {
                       const nextSlug = generateSlug(event.target.value);
-
                       setSlug(nextSlug);
-
-                      /*
-                       * Once the admin changes the slug manually,
-                       * title changes must no longer overwrite it.
-                       *
-                       * If the admin clears the slug completely,
-                       * the title is allowed to generate a new one.
-                       */
                       setSlugManuallyEdited(nextSlug.trim().length > 0);
                     }}
                     className={inputClass}
@@ -803,19 +972,15 @@ const [status, setStatus] = useState<
                     autoCorrect="off"
                     spellCheck={false}
                   />
-
                   <p className="mt-2 text-xs text-slate-500">
                     Auto-generated from the title. You can edit it manually.
                   </p>
                 </div>
 
-                {/* Author */}
-
                 <div className="min-w-0">
                   <label htmlFor="blog-author" className={labelClass}>
                     Author Name
                   </label>
-
                   <input
                     id="blog-author"
                     value={author}
@@ -827,12 +992,10 @@ const [status, setStatus] = useState<
               </div>
 
               {/* Excerpt */}
-
               <div>
                 <label htmlFor="blog-excerpt" className={labelClass}>
                   Excerpt
                 </label>
-
                 <textarea
                   id="blog-excerpt"
                   value={excerpt}
@@ -845,10 +1008,7 @@ const [status, setStatus] = useState<
             </div>
           </section>
 
-          {/* ---------------------------------------------
-              PRIMARY IMAGE
-          --------------------------------------------- */}
-
+          {/* PRIMARY IMAGE */}
           <section className={sectionClass}>
             <SectionHeader
               title="Primary Image"
@@ -876,45 +1036,60 @@ const [status, setStatus] = useState<
             </div>
           </section>
 
-          {/* ---------------------------------------------
-              ARTICLE CONTENT
-          --------------------------------------------- */}
-
+          {/* ARTICLE CONTENT */}
           <section className={sectionClass}>
             <SectionHeader
               title="Article Content"
-              description="Text and images can be arranged in any order."
+              description="Create text, tables, commands, and images in any custom order."
             />
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {blocks.map((block, index) => (
                 <div
                   key={block.id}
-                  className="rounded-xl border border-slate-700 bg-slate-950 p-3 sm:p-4"
+                  className="rounded-xl border border-slate-700 bg-slate-950 p-3 sm:p-4 shadow-sm w-full max-w-full min-w-0 overflow-hidden"
                 >
                   {/* Block Header */}
-
                   <div className="mb-4 flex items-center justify-between gap-3">
-                    <span className="text-xs font-semibold tracking-wide text-cyan-400">
-                      {block.type === "text"
-                        ? `Text ${index + 1}`
-                        : `Image ${index + 1}`}
+                    <span className="flex items-center gap-2 text-xs font-semibold tracking-wide">
+                      {block.type === "text" && (
+                        <span className="rounded bg-cyan-400/10 px-2 py-0.5 text-cyan-400 border border-cyan-400/20">
+                          Text {index + 1}
+                        </span>
+                      )}
+                      {block.type === "image" && (
+                        <span className="rounded bg-purple-400/10 px-2 py-0.5 text-purple-400 border border-purple-400/20">
+                          Image {index + 1}
+                        </span>
+                      )}
+                      {block.type === "table" && (
+                        <span className="rounded bg-sky-400/10 px-2 py-0.5 text-sky-400 border border-sky-400/20 flex items-center gap-1.5">
+                          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <line x1="3" y1="9" x2="21" y2="9" />
+                            <line x1="9" y1="3" x2="9" y2="21" />
+                          </svg>
+                          Table {index + 1} ({block.table.rows.length} × {block.table.headers.length})
+                        </span>
+                      )}
+                      {block.type === "command" && (
+                        <span className="rounded bg-emerald-400/10 px-2 py-0.5 text-emerald-400 border border-emerald-400/20 font-mono">
+                          &gt;_ Command {index + 1} ({block.command.language || "bash"})
+                        </span>
+                      )}
                     </span>
 
                     <div className="flex items-center gap-2">
-                      {/* Move Up */}
-
                       <button
                         type="button"
                         aria-label={`Move block ${index + 1} up`}
                         disabled={index === 0}
                         onClick={() => moveBlock(index, "up")}
                         className={iconButtonClass}
+                        title="Move Up"
                       >
                         ↑
                       </button>
-
-                      {/* Move Down */}
 
                       <button
                         type="button"
@@ -922,11 +1097,10 @@ const [status, setStatus] = useState<
                         disabled={index === blocks.length - 1}
                         onClick={() => moveBlock(index, "down")}
                         className={iconButtonClass}
+                        title="Move Down"
                       >
                         ↓
                       </button>
-
-                      {/* Remove */}
 
                       <button
                         type="button"
@@ -939,20 +1113,18 @@ const [status, setStatus] = useState<
                     </div>
                   </div>
 
-                  {/* Text Block */}
-
+                  {/* 1. TEXT BLOCK */}
                   {block.type === "text" && (
                     <div className="min-w-0 overflow-x-auto">
                       <RichTextEditor
                         value={block.text}
                         onChange={(value) => updateTextBlock(index, value)}
-                        placeholder="Write your article section..."
+                        placeholder="Write your article section, insert commands or tables..."
                       />
                     </div>
                   )}
 
-                  {/* Image Block */}
-
+                  {/* 2. IMAGE BLOCK */}
                   {block.type === "image" && (
                     <div className="space-y-4">
                       <ImageUploader
@@ -974,25 +1146,283 @@ const [status, setStatus] = useState<
                     </div>
                   )}
 
-                  {/* Add controls for this block */}
+                  {/* 3. TABLE BLOCK (CUSTOMIZABLE ROWS & COLUMNS) */}
+                  {block.type === "table" && (
+                    <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-4 w-full max-w-full min-w-0 overflow-hidden">
+                      {/* Table Settings & Dimensions */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <label className="flex items-center gap-2 text-xs font-medium text-slate-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={block.table.hasHeader}
+                              onChange={() => toggleTableHeader(index)}
+                              className="accent-cyan-400 rounded"
+                            />
+                            Include Header Row
+                          </label>
 
+                          <div className="h-4 w-px bg-slate-700 hidden sm:block" />
+
+                          <input
+                            type="text"
+                            value={block.table.caption ?? ""}
+                            onChange={(e) => updateTableCaption(index, e.target.value)}
+                            placeholder="Optional table caption or title..."
+                            className="rounded border border-slate-700 bg-slate-950 px-3 py-1 text-xs text-white placeholder:text-slate-600 outline-none focus:border-cyan-400 w-64"
+                          />
+                        </div>
+
+                        {/* Row & Column Action Controls */}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => addTableRow(index)}
+                            className="inline-flex items-center gap-1 rounded border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-semibold text-cyan-400 hover:bg-cyan-400/20"
+                            title="Add a new row to the table"
+                          >
+                            + Row
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => addTableColumn(index)}
+                            className="inline-flex items-center gap-1 rounded border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-semibold text-cyan-400 hover:bg-cyan-400/20"
+                            title="Add a new column to the table"
+                          >
+                            + Column
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Visual Table Editor */}
+                      <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-lg border border-slate-700 bg-slate-950 p-2">
+                        <table className="w-full min-w-[500px] border-collapse text-left">
+                          {/* Column Delete Header Row */}
+                          <thead>
+                            {block.table.hasHeader && (
+                              <tr className="border-b border-slate-700 bg-slate-900/90">
+                                <th className="w-10 px-2 py-2 text-center text-[10px] text-slate-500">
+                                  #
+                                </th>
+                                {block.table.headers.map((header, colIndex) => (
+                                  <th key={`th-${colIndex}`} className="p-1.5">
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="text"
+                                        value={header}
+                                        onChange={(e) =>
+                                          updateTableHeader(index, colIndex, e.target.value)
+                                        }
+                                        placeholder={`Header ${colIndex + 1}`}
+                                        className="w-full rounded border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-cyan-300 placeholder:text-slate-600 outline-none focus:border-cyan-400"
+                                      />
+                                      {block.table.headers.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeTableColumn(index, colIndex)}
+                                          title={`Delete column ${colIndex + 1}`}
+                                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-red-500/20 hover:text-red-400 text-xs"
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
+                                    </div>
+                                  </th>
+                                ))}
+                                <th className="w-10" />
+                              </tr>
+                            )}
+                          </thead>
+
+                          {/* Table Body Rows */}
+                          <tbody>
+                            {block.table.rows.map((row, rowIndex) => (
+                              <tr
+                                key={`tr-${rowIndex}`}
+                                className="border-b border-slate-800 hover:bg-slate-900/30"
+                              >
+                                <td className="px-2 py-2 text-center font-mono text-[11px] text-slate-500">
+                                  {rowIndex + 1}
+                                </td>
+
+                                {row.map((cell, colIndex) => (
+                                  <td key={`td-${rowIndex}-${colIndex}`} className="p-1.5">
+                                    <input
+                                      type="text"
+                                      value={cell}
+                                      onChange={(e) =>
+                                        updateTableCell(
+                                          index,
+                                          rowIndex,
+                                          colIndex,
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder={`Row ${rowIndex + 1}, Col ${colIndex + 1}`}
+                                      className="w-full rounded border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 outline-none focus:border-cyan-400"
+                                    />
+                                  </td>
+                                ))}
+
+                                <td className="px-1 text-center">
+                                  {block.table.rows.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeTableRow(index, rowIndex)}
+                                      title={`Delete row ${rowIndex + 1}`}
+                                      className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:bg-red-500/20 hover:text-red-400 text-xs"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between text-xs text-slate-500">
+                        <span>
+                          {block.table.rows.length} rows × {block.table.headers.length} columns
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => addTableRow(index)}
+                            className="text-cyan-400 hover:underline"
+                          >
+                            + Add another row
+                          </button>
+                          <span>•</span>
+                          <button
+                            type="button"
+                            onClick={() => addTableColumn(index)}
+                            className="text-cyan-400 hover:underline"
+                          >
+                            + Add another column
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 4. COMMAND BLOCK */}
+                  {block.type === "command" && (
+                    <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-4 w-full max-w-full min-w-0 overflow-hidden">
+                      {/* Language and Description header */}
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-slate-400">
+                            Shell / Language
+                          </label>
+                          <select
+                            value={block.command.language ?? "bash"}
+                            onChange={(e) =>
+                              updateCommandField(index, "language", e.target.value)
+                            }
+                            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-medium text-white outline-none focus:border-emerald-400"
+                          >
+                            <option value="bash">Bash / Linux</option>
+                            <option value="powershell">PowerShell</option>
+                            <option value="cmd">Windows CMD</option>
+                            <option value="sh">Shell (sh)</option>
+                            <option value="python">Python</option>
+                            <option value="sql">SQL</option>
+                            <option value="terminal">Generic Terminal</option>
+                          </select>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="mb-1 block text-xs font-medium text-slate-400">
+                            Command Description (optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={block.command.description ?? ""}
+                            onChange={(e) =>
+                              updateCommandField(index, "description", e.target.value)
+                            }
+                            placeholder="e.g. Scan target host for open ports and services"
+                            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-600 outline-none focus:border-emerald-400"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Command Code Area */}
+                      <div>
+                        <div className="flex items-center justify-between pb-1.5">
+                          <label className="text-xs font-medium text-emerald-400 flex items-center gap-1.5">
+                            <span className="font-mono">&gt;_</span> Command Script / Syntax
+                          </label>
+                          <span className="text-[11px] text-slate-500 font-mono">
+                            Multi-line supported
+                          </span>
+                        </div>
+                        <textarea
+                          value={block.command.command}
+                          onChange={(e) =>
+                            updateCommandField(index, "command", e.target.value)
+                          }
+                          rows={4}
+                          placeholder="e.g. nmap -sV -sC -p 1-65535 -T4 target.com"
+                          className="w-full rounded-lg border border-slate-700 bg-black/90 p-3 font-mono text-sm leading-relaxed text-emerald-400 placeholder:text-slate-600 outline-none focus:border-emerald-400"
+                        />
+                      </div>
+
+                      {/* Sample Output (Optional) */}
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-400">
+                          Sample Output (optional)
+                        </label>
+                        <textarea
+                          value={block.command.output ?? ""}
+                          onChange={(e) =>
+                            updateCommandField(index, "output", e.target.value)
+                          }
+                          rows={3}
+                          placeholder="Starting Nmap 7.94 ( https://nmap.org )...\nPORT   STATE SERVICE VERSION\n22/tcp open  ssh     OpenSSH 8.9p1"
+                          className="w-full rounded-lg border border-slate-700 bg-black/60 p-3 font-mono text-xs text-slate-300 placeholder:text-slate-600 outline-none focus:border-emerald-400"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add controls below this block */}
                   <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-800 pt-4">
                     <span className="mr-1 text-xs text-slate-500">
-                      Add below
+                      Add below:
                     </span>
 
                     <button
                       type="button"
                       onClick={() => addTextBlockAfter(index)}
-                      className={`${secondaryButtonClass} flex-1 sm:flex-none`}
+                      className={`${secondaryButtonClass} flex-1 sm:flex-none text-xs py-2`}
                     >
                       + Text
                     </button>
 
                     <button
                       type="button"
+                      onClick={() => addTableBlockAfter(index)}
+                      className="inline-flex items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs font-semibold text-sky-400 transition hover:bg-sky-500/20 flex-1 sm:flex-none"
+                    >
+                      + Table
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => addCommandBlockAfter(index)}
+                      className="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/20 flex-1 sm:flex-none"
+                    >
+                      + Command
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => addImageBlockAfter(index)}
-                      className={`${primaryButtonClass} flex-1 sm:flex-none`}
+                      className={`${primaryButtonClass} flex-1 sm:flex-none text-xs py-2`}
                     >
                       + Image
                     </button>
@@ -1001,26 +1431,41 @@ const [status, setStatus] = useState<
               ))}
             </div>
 
-            {/* Add controls only when there are no blocks */}
-
+            {/* Empty state when there are no blocks */}
             {blocks.length === 0 && (
               <div className="rounded-xl border border-dashed border-slate-700 px-4 py-10 text-center text-sm text-slate-500 sm:px-6">
                 No article blocks.
                 <br />
-                Add text or image content below.
+                Add text, customizable table, terminal command, or image below.
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   <button
                     type="button"
                     onClick={addTextBlock}
-                    className={`${secondaryButtonClass} flex-1 sm:flex-none`}
+                    className={secondaryButtonClass}
                   >
                     + Text
                   </button>
 
                   <button
                     type="button"
+                    onClick={addTableBlock}
+                    className="inline-flex items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-2.5 text-sm font-semibold text-sky-400 transition hover:bg-sky-500/20"
+                  >
+                    + Table
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={addCommandBlock}
+                    className="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
+                  >
+                    + Command
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={addImageBlock}
-                    className={`${primaryButtonClass} flex-1 sm:flex-none`}
+                    className={primaryButtonClass}
                   >
                     + Image
                   </button>
@@ -1029,10 +1474,7 @@ const [status, setStatus] = useState<
             )}
           </section>
 
-          {/* ---------------------------------------------
-              CYBERSECURITY FIELDS
-          --------------------------------------------- */}
-
+          {/* CYBERSECURITY FIELDS */}
           <section className={sectionClass}>
             <SectionHeader
               title="Cybersecurity Fields"
@@ -1046,25 +1488,9 @@ const [status, setStatus] = useState<
 
             <div className="grid gap-4 sm:grid-cols-2">
               {navbarFields.map((category) => {
-                /*
-                 * Only Threats & Attacks has subcategories.
-                 */
                 const isThreatsAndAttacks =
                   category.slug === "threats-attacks";
 
-                /*
-                 * --------------------------------------------------
-                 * NORMAL TOP-LEVEL FIELD
-                 * --------------------------------------------------
-                 *
-                 * Cyber News
-                 * Incident Investigation
-                 * Security & Defense
-                 * Emerging Security
-                 * Guides & Learning
-                 *
-                 * These fields are directly selectable.
-                 */
                 if (!isThreatsAndAttacks) {
                   const databaseField = fields.find(
                     (field) => field.slug === category.slug
@@ -1123,21 +1549,11 @@ const [status, setStatus] = useState<
                   );
                 }
 
-                /*
-                 * --------------------------------------------------
-                 * THREATS & ATTACKS
-                 * --------------------------------------------------
-                 *
-                 * Keeps the parent/subcategory structure and spans
-                 * the full width of the grid.
-                 */
                 return (
                   <div
                     key={category.id}
                     className="rounded-xl border border-slate-800 bg-slate-950 p-4 sm:col-span-2 sm:p-5"
                   >
-                    {/* Parent category */}
-
                     <div className="mb-4 flex items-center gap-3">
                       <NumberBadge value={category.number} />
 
@@ -1152,23 +1568,12 @@ const [status, setStatus] = useState<
                       </div>
                     </div>
 
-                    {/* Subcategories */}
-
                     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                       {category.subcategories.map((subcategory) => {
-                        /*
-                         * Find the corresponding database Field
-                         * using the exact same slug used by
-                         * the navbar configuration.
-                         */
                         const databaseField = fields.find(
                           (field) => field.slug === subcategory.slug
                         );
 
-                        /*
-                         * A category that doesn't yet exist
-                         * in PostgreSQL cannot be selected.
-                         */
                         if (!databaseField) {
                           return (
                             <div
@@ -1214,16 +1619,11 @@ const [status, setStatus] = useState<
             </div>
           </section>
 
-          {/* ---------------------------------------------
-              PUBLISHING
-          --------------------------------------------- */}
-
+          {/* PUBLISHING */}
           <section className={sectionClass}>
             <SectionHeader title="Publishing" />
 
             <div className="grid gap-5 sm:grid-cols-2">
-              {/* Status */}
-
               <div>
                 <label htmlFor="blog-status" className={labelClass}>
                   Status
@@ -1245,8 +1645,6 @@ const [status, setStatus] = useState<
                 </select>
               </div>
 
-              {/* Access */}
-
               <div>
                 <label htmlFor="blog-access" className={labelClass}>
                   Access
@@ -1266,8 +1664,6 @@ const [status, setStatus] = useState<
               </div>
             </div>
 
-            {/* Featured */}
-
             <label className="mt-5 flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300 transition hover:border-slate-600">
               <input
                 type="checkbox"
@@ -1279,14 +1675,9 @@ const [status, setStatus] = useState<
             </label>
           </section>
         </div>
-
       </div>
 
-      {/* =================================================
-          ACTIONS
-          Sticky so Save is always reachable on long forms
-      ================================================= */}
-
+      {/* STICKY ACTIONS */}
       <div className="sticky bottom-3 z-20 flex flex-col-reverse gap-3 rounded-xl border border-slate-800 bg-slate-950/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg shadow-black/30 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <p className="hidden truncate text-sm text-slate-500 sm:block">
           {isEditMode ? "Editing blog" : "New blog"} ·{" "}
@@ -1322,3 +1713,5 @@ const [status, setStatus] = useState<
     </form>
   );
 }
+
+export { BlogForm as BlogEditForm };
