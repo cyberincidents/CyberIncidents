@@ -33,18 +33,18 @@ export default async function NewBlogPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#050505] px-6 py-10 text-white">
+    <main className="min-h-screen bg-[#050505] px-3 sm:px-6 py-6 sm:py-10 text-white">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-400">
             Admin
           </p>
 
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-2xl sm:text-3xl font-bold">
             Create Blog
           </h1>
 
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-gray-400">
             Create and publish a new cybersecurity article.
           </p>
         </div>

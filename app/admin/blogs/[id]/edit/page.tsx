@@ -99,13 +99,13 @@ export default async function EditBlogPage({
   ===================================================== */
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
+    <main className="min-h-screen bg-slate-950 px-3 sm:px-6 py-6 sm:py-12 text-white">
       <div className="mx-auto max-w-5xl">
         {/* =================================================
             BREADCRUMB
         ================================================= */}
 
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <Link
             href="/admin"
             className="transition-colors hover:text-cyan-400"
@@ -133,13 +133,13 @@ export default async function EditBlogPage({
             HEADER
         ================================================= */}
 
-        <div className="mt-6 flex flex-col gap-6 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mt-4 sm:mt-6 flex flex-col gap-4 sm:gap-6 border-b border-white/10 pb-6 sm:pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-400">
               CyberIncidents // Admin
             </p>
 
-            <h1 className="mt-3 truncate text-3xl font-bold tracking-tight sm:text-4xl">
+            <h1 className="mt-2.5 sm:mt-3 break-words text-2xl font-bold tracking-tight sm:text-4xl">
               {blog.title}
             </h1>
 
@@ -203,7 +203,7 @@ export default async function EditBlogPage({
             FORM
         ================================================= */}
 
-        <div className="mt-10">
+        <div className="mt-6 sm:mt-10">
           <BlogEditForm
             blog={blog}
             fields={fields}

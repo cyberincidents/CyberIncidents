@@ -233,9 +233,9 @@ function generateSlug(value: string): string {
 ===================================================== */
 
 const inputClass =
-  "w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-base text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 sm:text-sm";
+  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 sm:px-4 sm:py-3 text-sm text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20";
 
-const labelClass = "mb-2 block text-sm font-medium text-slate-300";
+const labelClass = "mb-2 block text-xs sm:text-sm font-medium text-slate-300";
 
 const primaryButtonClass =
   "inline-flex items-center justify-center rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-50";
@@ -250,7 +250,7 @@ const iconButtonClass =
   "inline-flex h-9 min-w-9 items-center justify-center rounded-lg bg-slate-800 px-2 text-sm text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-slate-800";
 
 const sectionClass =
-  "rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6";
+  "rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900 p-3.5 sm:p-6";
 
 /* =====================================================
    SMALL UI HELPERS
@@ -266,14 +266,14 @@ function SectionHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
-      <div className="min-w-0">
-        <h2 className="text-lg font-semibold text-white sm:text-xl">
+    <div className="mb-4 sm:mb-6 flex flex-wrap items-start justify-between gap-2.5 sm:gap-3">
+      <div className="min-w-0 flex-1">
+        <h2 className="text-base sm:text-xl font-semibold text-white">
           {title}
         </h2>
 
         {description && (
-          <p className="mt-1 text-sm text-slate-400">{description}</p>
+          <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">{description}</p>
         )}
       </div>
 
@@ -1050,7 +1050,7 @@ export default function BlogForm({ blog, fields }: Props) {
                   className="rounded-xl border border-slate-700 bg-slate-950 p-3 sm:p-4 shadow-sm w-full max-w-full min-w-0 overflow-hidden"
                 >
                   {/* Block Header */}
-                  <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                     <span className="flex items-center gap-2 text-xs font-semibold tracking-wide">
                       {block.type === "text" && (
                         <span className="rounded bg-cyan-400/10 px-2 py-0.5 text-cyan-400 border border-cyan-400/20">
@@ -1150,8 +1150,8 @@ export default function BlogForm({ blog, fields }: Props) {
                   {block.type === "table" && (
                     <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3 sm:p-4 w-full max-w-full min-w-0 overflow-hidden">
                       {/* Table Settings & Dimensions */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-                        <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-3">
+                        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
                           <label className="flex items-center gap-2 text-xs font-medium text-slate-300 cursor-pointer">
                             <input
                               type="checkbox"
@@ -1169,12 +1169,12 @@ export default function BlogForm({ blog, fields }: Props) {
                             value={block.table.caption ?? ""}
                             onChange={(e) => updateTableCaption(index, e.target.value)}
                             placeholder="Optional table caption or title..."
-                            className="rounded border border-slate-700 bg-slate-950 px-3 py-1 text-xs text-white placeholder:text-slate-600 outline-none focus:border-cyan-400 w-64"
+                            className="w-full sm:w-64 rounded border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-white placeholder:text-slate-600 outline-none focus:border-cyan-400"
                           />
                         </div>
 
                         {/* Row & Column Action Controls */}
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
                           <button
                             type="button"
                             onClick={() => addTableRow(index)}
@@ -1197,7 +1197,7 @@ export default function BlogForm({ blog, fields }: Props) {
 
                       {/* Visual Table Editor */}
                       <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-lg border border-slate-700 bg-slate-950 p-2">
-                        <table className="w-full min-w-[500px] border-collapse text-left">
+                        <table className="w-full min-w-[360px] sm:min-w-[500px] border-collapse text-left">
                           {/* Column Delete Header Row */}
                           <thead>
                             {block.table.hasHeader && (
@@ -1283,7 +1283,7 @@ export default function BlogForm({ blog, fields }: Props) {
                         </table>
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                         <span>
                           {block.table.rows.length} rows × {block.table.headers.length} columns
                         </span>
@@ -1293,7 +1293,7 @@ export default function BlogForm({ blog, fields }: Props) {
                             onClick={() => addTableRow(index)}
                             className="text-cyan-400 hover:underline"
                           >
-                            + Add another row
+                            + Add row
                           </button>
                           <span>•</span>
                           <button
@@ -1301,10 +1301,11 @@ export default function BlogForm({ blog, fields }: Props) {
                             onClick={() => addTableColumn(index)}
                             className="text-cyan-400 hover:underline"
                           >
-                            + Add another column
+                            + Add column
                           </button>
                         </div>
                       </div>
+                      <p className="text-[11px] text-slate-500 sm:hidden">Tip: Swipe table horizontally to view and edit all cells.</p>
                     </div>
                   )}
 
@@ -1390,42 +1391,44 @@ export default function BlogForm({ blog, fields }: Props) {
                   )}
 
                   {/* Add controls below this block */}
-                  <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-800 pt-4">
-                    <span className="mr-1 text-xs text-slate-500">
+                  <div className="mt-5 border-t border-slate-800 pt-4">
+                    <span className="mb-2 block text-xs text-slate-500 sm:mb-0 sm:mr-2 sm:inline">
                       Add below:
                     </span>
 
-                    <button
-                      type="button"
-                      onClick={() => addTextBlockAfter(index)}
-                      className={`${secondaryButtonClass} flex-1 sm:flex-none text-xs py-2`}
-                    >
-                      + Text
-                    </button>
+                    <div className="grid grid-cols-2 sm:inline-flex sm:flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => addTextBlockAfter(index)}
+                        className={`${secondaryButtonClass} text-xs py-2`}
+                      >
+                        + Text
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => addTableBlockAfter(index)}
-                      className="inline-flex items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs font-semibold text-sky-400 transition hover:bg-sky-500/20 flex-1 sm:flex-none"
-                    >
-                      + Table
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => addTableBlockAfter(index)}
+                        className="inline-flex items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs font-semibold text-sky-400 transition hover:bg-sky-500/20"
+                      >
+                        + Table
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => addCommandBlockAfter(index)}
-                      className="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/20 flex-1 sm:flex-none"
-                    >
-                      + Command
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => addCommandBlockAfter(index)}
+                        className="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
+                      >
+                        + Command
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => addImageBlockAfter(index)}
-                      className={`${primaryButtonClass} flex-1 sm:flex-none text-xs py-2`}
-                    >
-                      + Image
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => addImageBlockAfter(index)}
+                        className={`${primaryButtonClass} text-xs py-2`}
+                      >
+                        + Image
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1433,15 +1436,15 @@ export default function BlogForm({ blog, fields }: Props) {
 
             {/* Empty state when there are no blocks */}
             {blocks.length === 0 && (
-              <div className="rounded-xl border border-dashed border-slate-700 px-4 py-10 text-center text-sm text-slate-500 sm:px-6">
+              <div className="rounded-xl border border-dashed border-slate-700 px-4 py-8 sm:py-10 text-center text-sm text-slate-500 sm:px-6">
                 No article blocks.
                 <br />
                 Add text, customizable table, terminal command, or image below.
-                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <div className="mt-5 grid grid-cols-2 sm:inline-flex sm:flex-wrap justify-center gap-2">
                   <button
                     type="button"
                     onClick={addTextBlock}
-                    className={secondaryButtonClass}
+                    className={`${secondaryButtonClass} text-xs sm:text-sm`}
                   >
                     + Text
                   </button>
@@ -1449,7 +1452,7 @@ export default function BlogForm({ blog, fields }: Props) {
                   <button
                     type="button"
                     onClick={addTableBlock}
-                    className="inline-flex items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-2.5 text-sm font-semibold text-sky-400 transition hover:bg-sky-500/20"
+                    className="inline-flex items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/10 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-sky-400 transition hover:bg-sky-500/20"
                   >
                     + Table
                   </button>
@@ -1457,7 +1460,7 @@ export default function BlogForm({ blog, fields }: Props) {
                   <button
                     type="button"
                     onClick={addCommandBlock}
-                    className="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
+                    className="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/20"
                   >
                     + Command
                   </button>
@@ -1465,7 +1468,7 @@ export default function BlogForm({ blog, fields }: Props) {
                   <button
                     type="button"
                     onClick={addImageBlock}
-                    className={primaryButtonClass}
+                    className={`${primaryButtonClass} text-xs sm:text-sm`}
                   >
                     + Image
                   </button>
@@ -1678,7 +1681,7 @@ export default function BlogForm({ blog, fields }: Props) {
       </div>
 
       {/* STICKY ACTIONS */}
-      <div className="sticky bottom-3 z-20 flex flex-col-reverse gap-3 rounded-xl border border-slate-800 bg-slate-950/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg shadow-black/30 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:p-4">
+      <div className="sticky bottom-2 sm:bottom-3 z-20 flex flex-col-reverse gap-2.5 sm:gap-3 rounded-xl border border-slate-800 bg-slate-950/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-xl shadow-black/40 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <p className="hidden truncate text-sm text-slate-500 sm:block">
           {isEditMode ? "Editing blog" : "New blog"} ·{" "}
           {status === "DRAFT"
@@ -1688,11 +1691,11 @@ export default function BlogForm({ blog, fields }: Props) {
               : "Archived"}
         </p>
 
-        <div className="flex w-full gap-3 sm:w-auto">
+        <div className="flex w-full gap-2.5 sm:gap-3 sm:w-auto">
           <button
             type="button"
             onClick={() => router.push("/admin/blogs")}
-            className={`${secondaryButtonClass} flex-1 px-6 py-3 sm:flex-none`}
+            className={`${secondaryButtonClass} flex-1 px-4 sm:px-6 py-2.5 sm:py-3 sm:flex-none text-xs sm:text-sm`}
           >
             Cancel
           </button>
@@ -1700,7 +1703,7 @@ export default function BlogForm({ blog, fields }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className={`${primaryButtonClass} flex-1 px-6 py-3 sm:flex-none`}
+            className={`${primaryButtonClass} flex-1 px-4 sm:px-6 py-2.5 sm:py-3 sm:flex-none text-xs sm:text-sm`}
           >
             {saving
               ? "Saving..."

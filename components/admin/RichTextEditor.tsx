@@ -189,11 +189,12 @@ export default function RichTextEditor({
       const containerRect = containerRef.current.getBoundingClientRect();
       const tableRect = foundTable.getBoundingClientRect();
       const topOffset = tableRect.top - containerRect.top;
-      const leftOffset = Math.max(8, tableRect.left - containerRect.left);
+      const maxLeft = Math.max(8, (containerRect.width || 320) - 260);
+      const leftOffset = Math.max(8, Math.min(tableRect.left - containerRect.left, maxLeft));
 
       // Position floating bar right above the table (or right inside top of table if near top)
       setTableBarPos({
-        top: Math.max(50, topOffset - 36),
+        top: Math.max(45, topOffset - 36),
         left: leftOffset,
       });
     } else {
@@ -203,9 +204,11 @@ export default function RichTextEditor({
     if (foundPre && containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect();
       const preRect = foundPre.getBoundingClientRect();
+      const rightOffset = Math.max(8, Math.min(containerRect.right - preRect.right + 12, (containerRect.width || 320) - 140));
+
       setPreHintPos({
-        top: Math.max(50, preRect.top - containerRect.top + 8),
-        right: Math.max(12, containerRect.right - preRect.right + 12),
+        top: Math.max(45, preRect.top - containerRect.top + 8),
+        right: rightOffset,
       });
     } else {
       setPreHintPos(null);
@@ -583,6 +586,45 @@ export default function RichTextEditor({
     emitChange();
   }
 
+  /* =====================================================
+     EXIT CODE BLOCK (Directly to Next Paragraph)
+     Works seamlessly on mobile tap & desktop Shift+Enter
+  ===================================================== */
+  function exitCodeBlock(targetPre?: HTMLElement | null) {
+    const pre = targetPre || activePre;
+    if (!pre || !editorRef.current?.contains(pre)) return;
+
+    let nextBlock = pre.nextElementSibling as HTMLElement | null;
+
+    if (!nextBlock || nextBlock.tagName.toLowerCase() !== "p") {
+      const p = document.createElement("p");
+      p.appendChild(document.createElement("br"));
+
+      if (pre.nextSibling) {
+        editorRef.current.insertBefore(p, pre.nextSibling);
+      } else {
+        editorRef.current.appendChild(p);
+      }
+      nextBlock = p;
+    }
+
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+
+    const selection = window.getSelection();
+    if (selection && nextBlock) {
+      const newRange = document.createRange();
+      newRange.setStart(nextBlock, 0);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    }
+
+    nextBlock.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    emitChange();
+  }
+
   /* Keydown inside editor */
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     // 1. Tab navigation inside table cells
@@ -634,29 +676,7 @@ export default function RichTextEditor({
       // 1. Shift + Enter: Exit code box to next line in text area
       if (e.key === "Enter" && e.shiftKey) {
         e.preventDefault();
-
-        let nextBlock = preBlock.nextElementSibling as HTMLElement | null;
-
-        if (!nextBlock || nextBlock.tagName.toLowerCase() !== "p") {
-          const p = document.createElement("p");
-          p.appendChild(document.createElement("br"));
-
-          if (preBlock.nextSibling) {
-            editorRef.current.insertBefore(p, preBlock.nextSibling);
-          } else {
-            editorRef.current.appendChild(p);
-          }
-          nextBlock = p;
-        }
-
-        const newRange = document.createRange();
-        newRange.setStart(nextBlock, 0);
-        newRange.collapse(true);
-        selection?.removeAllRanges();
-        selection?.addRange(newRange);
-
-        nextBlock.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        emitChange();
+        exitCodeBlock(preBlock);
         return;
       }
 
@@ -697,7 +717,7 @@ export default function RichTextEditor({
       {/* =====================================================
           TOOLBAR
       ===================================================== */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 bg-slate-900 p-2">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 border-b border-slate-800 bg-slate-900 p-1.5 sm:p-2">
         {/* INLINE FORMATTING */}
         <div className="flex items-center gap-1">
           <button
@@ -709,7 +729,7 @@ export default function RichTextEditor({
               saveSelection();
               executeInlineCommand("bold");
             }}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-md border text-sm font-bold transition ${
+            className={`inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md border text-xs sm:text-sm font-bold transition ${
               activeFormats.bold
                 ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-300"
                 : "border-slate-700 bg-slate-900 text-slate-300 hover:border-cyan-400/40 hover:text-white"
@@ -727,7 +747,7 @@ export default function RichTextEditor({
               saveSelection();
               executeInlineCommand("italic");
             }}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-md border text-sm italic transition ${
+            className={`inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md border text-xs sm:text-sm italic transition ${
               activeFormats.italic
                 ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-300"
                 : "border-slate-700 bg-slate-900 text-slate-300 hover:border-cyan-400/40 hover:text-white"
@@ -745,7 +765,7 @@ export default function RichTextEditor({
               saveSelection();
               executeInlineCommand("underline");
             }}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-md border text-sm underline transition ${
+            className={`inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-md border text-xs sm:text-sm underline transition ${
               activeFormats.underline
                 ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-300"
                 : "border-slate-700 bg-slate-900 text-slate-300 hover:border-cyan-400/40 hover:text-white"
@@ -763,17 +783,18 @@ export default function RichTextEditor({
               saveSelection();
               toggleInlineCode();
             }}
-            className={`inline-flex h-9 items-center gap-1 rounded-md border px-2.5 text-xs font-mono font-semibold transition ${
+            className={`inline-flex h-8 sm:h-9 items-center gap-1 rounded-md border px-2 sm:px-2.5 text-xs font-mono font-semibold transition ${
               activeFormats.code
                 ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-300"
                 : "border-slate-700 bg-slate-900 text-slate-300 hover:border-cyan-400/40 hover:text-white"
             }`}
           >
-            <span className="text-cyan-400">&lt;/&gt;</span> Inline
+            <span className="text-cyan-400">&lt;/&gt;</span>
+            <span className="hidden xs:inline">Inline</span>
           </button>
         </div>
 
-        <div className="mx-1 h-6 w-px bg-slate-700" />
+        <div className="hidden sm:block mx-1 h-6 w-px bg-slate-700" />
 
         {/* BLOCK FORMAT DROPDOWN */}
         <label className="sr-only" htmlFor="article-block-format">
@@ -785,7 +806,7 @@ export default function RichTextEditor({
           value={blockFormat}
           onMouseDown={() => saveSelection()}
           onChange={handleBlockFormatChange}
-          className="h-9 min-w-[140px] rounded-md border border-slate-700 bg-slate-900 px-3 text-xs font-medium text-slate-200 outline-none transition focus:border-cyan-400"
+          className="h-8 sm:h-9 min-w-[120px] sm:min-w-[140px] rounded-md border border-slate-700 bg-slate-900 px-2.5 sm:px-3 text-xs font-medium text-slate-200 outline-none transition focus:border-cyan-400"
           title="Choose block format"
         >
           <option value="p">Paragraph</option>
@@ -797,10 +818,10 @@ export default function RichTextEditor({
           <option value="ol">Numbered List</option>
         </select>
 
-        <div className="mx-1 h-6 w-px bg-slate-700" />
+        <div className="hidden sm:block mx-1 h-6 w-px bg-slate-700" />
 
         {/* INSERT CODE BLOCK & TABLE AT CURSOR */}
-        <div className="relative flex items-center gap-1.5">
+        <div className="relative flex flex-wrap items-center gap-1.5">
           {/* Insert Code Block Button */}
           <button
             type="button"
@@ -810,10 +831,29 @@ export default function RichTextEditor({
               saveSelection();
               insertCodeBlock();
             }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/20 hover:text-emerald-300"
+            className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 sm:px-3 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/20 hover:text-emerald-300"
           >
             <span className="font-mono text-emerald-400">&gt;_</span> Code Block
           </button>
+
+          {/* Quick Exit Code Button (appears whenever cursor is inside a code block) */}
+          {activePre && (
+            <button
+              type="button"
+              title="Exit from Code Block to normal text line"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                exitCodeBlock(activePre);
+              }}
+              onTouchEnd={(event) => {
+                event.preventDefault();
+                exitCodeBlock(activePre);
+              }}
+              className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-md border border-emerald-400 bg-emerald-500/25 px-2.5 sm:px-3 text-xs font-bold text-emerald-300 shadow-sm transition hover:bg-emerald-500/35 active:scale-95 animate-pulse cursor-pointer"
+            >
+              <span className="font-mono text-sm leading-none">↵</span> Exit Code
+            </button>
+          )}
 
           {/* Insert Table Button */}
           <div className="relative">
@@ -825,7 +865,7 @@ export default function RichTextEditor({
                 saveSelection();
                 setShowTablePopover((prev) => !prev);
               }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 text-xs font-semibold text-cyan-400 transition hover:bg-cyan-500/20 hover:text-cyan-300"
+              className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2.5 sm:px-3 text-xs font-semibold text-cyan-400 transition hover:bg-cyan-500/20 hover:text-cyan-300"
             >
               <svg
                 className="h-3.5 w-3.5"
@@ -845,7 +885,7 @@ export default function RichTextEditor({
 
             {/* Table Dimension Popover */}
             {showTablePopover && (
-              <div className="absolute left-0 top-full z-40 mt-1 w-64 rounded-xl border border-cyan-500/40 bg-slate-900/95 p-3.5 shadow-2xl backdrop-blur-md">
+              <div className="absolute left-0 top-full z-40 mt-1 w-64 max-w-[calc(100vw-2.5rem)] rounded-xl border border-cyan-500/40 bg-slate-900/95 p-3.5 shadow-2xl backdrop-blur-md">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                   <span className="text-xs font-bold text-cyan-400">
                     Insert Table
@@ -935,9 +975,9 @@ export default function RichTextEditor({
             left: `${tableBarPos.left}px`,
             zIndex: 30,
           }}
-          className="flex flex-wrap items-center gap-1 rounded-lg border border-cyan-500/50 bg-slate-900/95 px-2 py-1 text-xs shadow-2xl backdrop-blur-md"
+          className="flex max-w-[calc(100%-16px)] overflow-x-auto items-center gap-1 rounded-lg border border-cyan-500/50 bg-slate-900/95 px-2 py-1 text-xs shadow-2xl backdrop-blur-md"
         >
-          <span className="font-semibold text-cyan-400 mr-1 text-[11px] flex items-center gap-1">
+          <span className="font-semibold text-cyan-400 mr-1 text-[11px] shrink-0 flex items-center gap-1">
             <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <line x1="3" y1="9" x2="21" y2="9" />
@@ -952,7 +992,7 @@ export default function RichTextEditor({
               e.preventDefault();
               addRow("above");
             }}
-            className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:border-cyan-400 hover:text-white"
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:border-cyan-400 hover:text-white shrink-0"
             title="Add row above current row"
           >
             + Row Above
@@ -964,7 +1004,7 @@ export default function RichTextEditor({
               e.preventDefault();
               addRow("below");
             }}
-            className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:border-cyan-400 hover:text-white"
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:border-cyan-400 hover:text-white shrink-0"
             title="Add row below current row"
           >
             + Row Below
@@ -976,13 +1016,13 @@ export default function RichTextEditor({
               e.preventDefault();
               deleteCurrentRow();
             }}
-            className="rounded border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] text-red-300 hover:bg-red-500/20"
+            className="rounded border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] text-red-300 hover:bg-red-500/20 shrink-0"
             title="Delete current row"
           >
             - Row
           </button>
 
-          <div className="mx-0.5 h-3.5 w-px bg-slate-700" />
+          <div className="mx-0.5 h-3.5 w-px bg-slate-700 shrink-0" />
 
           <button
             type="button"
@@ -990,7 +1030,7 @@ export default function RichTextEditor({
               e.preventDefault();
               addColumn("left");
             }}
-            className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:border-cyan-400 hover:text-white"
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:border-cyan-400 hover:text-white shrink-0"
             title="Add column to the left"
           >
             + Col Left
@@ -1002,7 +1042,7 @@ export default function RichTextEditor({
               e.preventDefault();
               addColumn("right");
             }}
-            className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:border-cyan-400 hover:text-white"
+            className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-200 hover:border-cyan-400 hover:text-white shrink-0"
             title="Add column to the right"
           >
             + Col Right
@@ -1014,13 +1054,13 @@ export default function RichTextEditor({
               e.preventDefault();
               deleteCurrentColumn();
             }}
-            className="rounded border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] text-red-300 hover:bg-red-500/20"
+            className="rounded border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] text-red-300 hover:bg-red-500/20 shrink-0"
             title="Delete current column"
           >
             - Col
           </button>
 
-          <div className="mx-0.5 h-3.5 w-px bg-slate-700" />
+          <div className="mx-0.5 h-3.5 w-px bg-slate-700 shrink-0" />
 
           <button
             type="button"
@@ -1028,7 +1068,7 @@ export default function RichTextEditor({
               e.preventDefault();
               deleteCurrentTable();
             }}
-            className="rounded border border-red-500/50 bg-red-500/20 px-2 py-0.5 text-[11px] font-semibold text-red-400 hover:bg-red-500/30"
+            className="rounded border border-red-500/50 bg-red-500/20 px-2 py-0.5 text-[11px] font-semibold text-red-400 hover:bg-red-500/30 shrink-0"
             title="Delete entire table"
           >
             Delete Table
@@ -1036,7 +1076,7 @@ export default function RichTextEditor({
         </div>
       )}
 
-      {/* FLOATING HINT BADGE ON ACTIVE CODE BLOCK */}
+      {/* FLOATING ACTION BUTTON ON ACTIVE CODE BLOCK (Interactive on Mobile & Desktop) */}
       {activePre && preHintPos && (
         <div
           style={{
@@ -1044,15 +1084,27 @@ export default function RichTextEditor({
             top: `${preHintPos.top}px`,
             right: `${preHintPos.right}px`,
             zIndex: 25,
-            pointerEvents: "none",
           }}
-          className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-slate-950/90 px-2 py-0.5 font-mono text-[11px] text-emerald-400 shadow-lg backdrop-blur-sm"
+          className="max-w-[calc(100%-1rem)]"
         >
-          <span className="text-slate-400">Press</span>
-          <kbd className="rounded border border-emerald-500/40 bg-slate-800 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-            Shift + Enter
-          </kbd>
-          <span className="text-slate-400">to exit to next line ↵</span>
+          <button
+            type="button"
+            title="Exit Code Block to next line (or press Shift+Enter)"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              exitCodeBlock(activePre);
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              exitCodeBlock(activePre);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/50 bg-slate-950/95 px-2.5 py-1 font-mono text-[11px] text-emerald-300 shadow-xl backdrop-blur-md transition hover:border-emerald-400 hover:bg-emerald-950 hover:text-emerald-200 active:scale-95 cursor-pointer select-none"
+          >
+            <span className="font-bold text-emerald-400">↵ Exit Code</span>
+            <span className="hidden sm:inline text-slate-400 font-sans">
+              (or <kbd className="rounded border border-emerald-500/40 bg-slate-800 px-1 py-0.5 text-[10px] font-bold text-emerald-300">Shift+Enter</kbd>)
+            </span>
+          </button>
         </div>
       )}
 
@@ -1061,7 +1113,7 @@ export default function RichTextEditor({
       ===================================================== */}
       <div className="relative">
         {!value && (
-          <div className="pointer-events-none absolute left-5 top-4 z-10 text-slate-500">
+          <div className="pointer-events-none absolute left-3 sm:left-5 top-3 sm:top-4 z-10 text-xs sm:text-base text-slate-500">
             {placeholder}
           </div>
         )}
@@ -1078,46 +1130,58 @@ export default function RichTextEditor({
           onBlur={saveSelection}
           onKeyDown={handleKeyDown}
           className="
-            min-h-[280px]
+            min-h-[220px]
+            sm:min-h-[280px]
             w-full
             bg-slate-900
-            px-5
-            py-4
-            text-base
-            leading-7
+            px-3
+            py-3
+            sm:px-5
+            sm:py-4
+            text-sm
+            sm:text-base
+            leading-relaxed
+            sm:leading-7
             text-slate-200
             outline-none
+            break-words
+            [overflow-wrap:anywhere]
 
             [&_p]:mb-4
 
-            [&_h1]:mb-5
-            [&_h1]:mt-6
-            [&_h1]:text-3xl
+            [&_h1]:mb-4
+            [&_h1]:mt-5
+            [&_h1]:text-2xl
+            [&_h1]:sm:text-3xl
             [&_h1]:font-bold
             [&_h1]:leading-tight
             [&_h1]:text-white
 
-            [&_h2]:mb-4
-            [&_h2]:mt-6
-            [&_h2]:text-2xl
+            [&_h2]:mb-3
+            [&_h2]:mt-5
+            [&_h2]:text-xl
+            [&_h2]:sm:text-2xl
             [&_h2]:font-bold
             [&_h2]:leading-tight
             [&_h2]:text-white
 
-            [&_h3]:mb-3
-            [&_h3]:mt-5
-            [&_h3]:text-xl
+            [&_h3]:mb-2.5
+            [&_h3]:mt-4
+            [&_h3]:text-lg
+            [&_h3]:sm:text-xl
             [&_h3]:font-semibold
             [&_h3]:leading-tight
             [&_h3]:text-white
 
             [&_ul]:mb-4
             [&_ul]:list-disc
-            [&_ul]:pl-6
+            [&_ul]:pl-5
+            [&_ul]:sm:pl-6
 
             [&_ol]:mb-4
             [&_ol]:list-decimal
-            [&_ol]:pl-6
+            [&_ol]:pl-5
+            [&_ol]:sm:pl-6
 
             [&_li]:mb-1
 
@@ -1131,7 +1195,8 @@ export default function RichTextEditor({
             [&_th]:border
             [&_th]:border-slate-700
             [&_th]:bg-slate-800
-            [&_th]:px-3
+            [&_th]:px-2.5
+            [&_th]:sm:px-3
             [&_th]:py-2
             [&_th]:text-left
             [&_th]:font-semibold
@@ -1139,7 +1204,8 @@ export default function RichTextEditor({
 
             [&_td]:border
             [&_td]:border-slate-700
-            [&_td]:px-3
+            [&_td]:px-2.5
+            [&_td]:sm:px-3
             [&_td]:py-2
             [&_td]:text-slate-200
 
@@ -1152,9 +1218,11 @@ export default function RichTextEditor({
             [&_pre]:border
             [&_pre]:border-slate-800
             [&_pre]:bg-[#070a10]
-            [&_pre]:p-4
+            [&_pre]:p-3
+            [&_pre]:sm:p-4
             [&_pre]:font-mono
-            [&_pre]:text-sm
+            [&_pre]:text-xs
+            [&_pre]:sm:text-sm
             [&_pre]:text-emerald-400
 
             [&_pre_code]:bg-transparent
@@ -1176,29 +1244,44 @@ export default function RichTextEditor({
         />
       </div>
 
-      <div className="border-t border-slate-800 px-4 py-2.5 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2">
+      <div className="border-t border-slate-800 px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2">
         {activePre ? (
-          <div className="flex items-center gap-1.5 text-emerald-400 font-medium">
-            <span className="font-mono font-bold text-emerald-400">&gt;_ Inside Code Block:</span>
-            <span>Press</span>
-            <kbd className="rounded border border-emerald-500/40 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-300 shadow-sm">
-              Shift + Enter
-            </kbd>
-            <span>to exit code line and continue writing in text area.</span>
+          <div className="flex w-full flex-wrap items-center justify-between gap-2 text-emerald-400 font-medium">
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-emerald-400">&gt;_ Inside Code Block</span>
+              <span className="hidden sm:inline text-slate-400">• Press Shift + Enter</span>
+            </div>
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                exitCodeBlock(activePre);
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                exitCodeBlock(activePre);
+              }}
+              className="inline-flex items-center gap-1 rounded bg-emerald-500/20 border border-emerald-400/40 px-2.5 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/30 active:scale-95 transition cursor-pointer"
+            >
+              ↵ Exit to Text Line
+            </button>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span>
-              Click <strong>&gt;_ Code Block</strong> to add code directly under text. Press
+              Click <strong>&gt;_ Code Block</strong> to add code under text.
             </span>
-            <kbd className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5 font-mono text-[10px] text-slate-300">
-              Shift + Enter
-            </kbd>
-            <span>inside code to exit to next line.</span>
+            <span className="hidden sm:inline">
+              Press
+              <kbd className="mx-1 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 font-mono text-[10px] text-slate-300">
+                Shift + Enter
+              </kbd>
+              inside code to exit.
+            </span>
           </div>
         )}
 
-        <span className="text-slate-500">
+        <span className="hidden sm:inline text-slate-500">
           Tip: Press Tab to move between table cells or add rows.
         </span>
       </div>
